@@ -1,0 +1,44 @@
+{
+  "name": "blockchain",
+  "displayName": "Blockchain",
+  "version": "1.0.0",
+  "description": "blockchain",
+  "author": "WFD",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build --zip",
+    "package": "plasmo package"
+  },
+  "dependencies": {
+    "@ant-design/icons": "5.0.1",
+    "@plasmohq/messaging": "^0.3.3",
+    "@plasmohq/storage": "^1.6.1",
+    "antd": "^5.5.1",
+    "antd-style": "^3.2.1",
+    "bignumber.js": "^9.1.0",
+    "dayjs": "^1.11.5",
+    "ethers": "^6.5.1",
+    "plasmo": "0.75.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@plasmohq/prettier-plugin-sort-imports": "^3.6.4",
+    "@types/chrome": "0.0.210",
+    "@types/node": "18.11.18",
+    "@types/react": "18.0.27",
+    "@types/react-dom": "18.0.10",
+    "prettier": "2.8.3",
+    "typescript": "4.9.4"
+  },
+  "manifest": {
+    "host_permissions": [
+      "https://*/*"
+    ],
+    "permissions": [
+      "downloads",
+      "scripting",
+      "tabs"
+    ]
+  }
+}

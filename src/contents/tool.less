@@ -1,0 +1,103 @@
+@import "../components/style/index";
+
+.anticon {
+  display: inline-block;
+  color: inherit;
+  font-style: normal;
+  line-height: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: -0.125em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  &.anticon-spin::before, &.anticon-spin {
+    display: inline-block;
+    -webkit-animation: loadingCircle 1s infinite linear;
+    animation: loadingCircle 1s infinite linear;
+  }
+
+  @-webkit-keyframes loadingCircle {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes loadingCircle {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.select-before {
+  width: 80px;
+}
+
+[data-theme='compact'] .select-before {
+  width: 80px;
+}
+
+.ant-input-group-addon {
+  width: 80px !important;
+  overflow: hidden;
+  padding: 0 0 !important;
+}
+
+.aflex {
+  display: flex;
+  flex-direction: row;
+
+  .ant-input-compact-first-item {
+    min-width: 80px;
+    max-width: 80px;
+    width: 80px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-select-compact-first-item {
+    min-width: 80px;
+  }
+
+  .full {
+    flex: auto;
+  }
+
+  .ant-btn-compact-item {
+    width: 32px;
+  }
+}
+
+.select-node-popup {
+  .ant-select-item-option-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .anticon-delete {
+      display: block !important;
+
+      &:hover {
+        color: #ccc;
+      }
+    }
+  }
+}
+
+* {
+  &::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.25);
+  }
+}

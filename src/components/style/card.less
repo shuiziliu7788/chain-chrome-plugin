@@ -1,0 +1,28 @@
+.tool-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
+  .ant-card-body {
+    flex: auto;
+  }
+}
+
+.ant-card-body {
+  max-height: 100vh;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
