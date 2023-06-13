@@ -1,12 +1,8 @@
 const {getCreateAddress} = require("ethers")
 
 
-for (let i = 0; i < 10; i++) {
-    console.log(getCreateAddress({
-        from: "0xbd770416a3345f91e4b34576cb804a576fa48eb1",
-        nonce: i,
-    }))
-}
+var arr6 = Array.from({length:2}, () => k);
+console.log(arr6)
 
 
 /*

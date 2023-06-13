@@ -4,6 +4,7 @@ import {Router, Token} from "@/components";
 import {TestSwapIface} from "@/constant";
 import {FormatNumber} from "@/utils/number";
 import dayjs from "dayjs";
+import {Response} from "@/types/tenderly/response";
 
 export const abiCoder = AbiCoder.defaultAbiCoder()
 
@@ -19,6 +20,7 @@ export interface TokenInfo extends Token {
     isAddPair?: boolean;
     isSwap?: boolean;
     isReserve?: boolean;
+    gas?: number;
 }
 
 export interface TradeInfo {
@@ -43,6 +45,10 @@ export interface Swap {
     block_timestamp?: number,
     time?: string,
     error?: string,
+    simulation?: {
+        fork_id?: string,
+        id?: string,
+    }
 }
 
 export const getToken = async (node: string, target: string): Promise<Token> => {
@@ -131,7 +137,7 @@ export const getRouter = async (node: string, target: string): Promise<Router> =
 }
 
 export const encode = (values: any): string => {
-    return TestSwapIface.encodeFunctionData("one", [{
+    const input = {
         router: values.router.address,
         tokenIn: values.tokenIn.address,
         tokenOut: values.tokenOut.address,
@@ -139,7 +145,13 @@ export const encode = (values: any): string => {
         buy: values.amountBuy * 100,
         sell: values.amountSell * 100,
         transfer: values.amountTransfer * 100,
-    }])
+    }
+
+    if (values.count > 1) {
+        return TestSwapIface.encodeFunctionData("many", [Array.from({length: values.count}, () => input)])
+    }
+
+    return TestSwapIface.encodeFunctionData("one", [input])
 }
 
 export const analyzeTokenInfo = (tokenIn: Token, tokenOut: Token, info: any): TradeInfo => {
@@ -155,6 +167,7 @@ export const analyzeTokenInfo = (tokenIn: Token, tokenOut: Token, info: any): Tr
             isSwap: info.tokenIn.isSwap,
             isAddPair: info.tokenIn.isAddPair,
             isReserve: Number(info.tokenIn.reserveAmount) > 0,
+            gas: Number(info.tokenIn.gas),
         },
         tokenOut: {
             ...tokenOut,
@@ -165,42 +178,59 @@ export const analyzeTokenInfo = (tokenIn: Token, tokenOut: Token, info: any): Tr
             isSwap: info.tokenOut.isSwap,
             isAddPair: info.tokenOut.isAddPair,
             isReserve: Number(info.tokenOut.reserveAmount) > 0,
+            gas: Number(info.tokenOut.gas),
         },
         error: info.error,
     }
 }
 
-export const decode = (resp: string, fields: any): Swap => {
+
+export const decode = (resp: Response, fields: any): Swap[] => {
     const tokenIn: Token = fields['tokenIn'] ?? {}
     const tokenOut: Token = fields['tokenOut'] ?? {}
-    const result = TestSwapIface.decodeFunctionResult("one", resp)['result']
-
-    const data: Swap = {
-        key: `${result.id}-${result.index}-${Math.random()}`,
-        id: `${result.id}-${result.index}`,
-        buy: analyzeTokenInfo(tokenIn, tokenOut, result.buy.toObject()),
-        sell: analyzeTokenInfo(tokenOut, tokenIn, result.sell.toObject()),
-        transfer: analyzeTokenInfo(tokenOut, tokenOut, result.transfer.toObject()),
-        block_number: Number(result.blockNumber),
-        block_timestamp: Number(result.blockTimestamp),
-        tokenIn: {
-            ...tokenIn,
-            amount: FormatNumber(result.account.balanceIn, tokenIn.decimals),
-        },
-        tokenOut: {
-            ...tokenOut,
-            amount: FormatNumber(result.account.balanceOut, tokenOut.decimals),
-        },
-        recipient: result.account.account,
-        time: dayjs(Number(result.blockTimestamp) * 1000).format("YYYY-MM-DD HH:mm:ss")
+    const output = resp.transaction.transaction_info.call_trace.output
+    let results = [];
+    // 判断怎么即
+    if (fields.count > 1) {
+        results = TestSwapIface.decodeFunctionResult("many", output)['results']
+    } else {
+        results = [TestSwapIface.decodeFunctionResult("one", output)['result']]
     }
 
-    data.tokenIn.isSwap = data.sell.tokenOut.isSwap;
-    data.tokenIn.isReserve = data.sell.tokenOut.isReserve;
-    data.tokenIn.isAddPair = data.sell.tokenOut.isAddPair;
+    return results.map(result => {
 
-    data.tokenOut.isSwap = data.sell.tokenIn.isSwap;
-    data.tokenOut.isReserve = data.sell.tokenIn.isReserve;
-    data.tokenOut.isAddPair = data.sell.tokenIn.isAddPair;
-    return data
+        const data: Swap = {
+            key: `${result.id}-${result.index}-${Math.random()}`,
+            id: `${result.id}-${result.index}`,
+            buy: analyzeTokenInfo(tokenIn, tokenOut, result.buy.toObject()),
+            sell: analyzeTokenInfo(tokenOut, tokenIn, result.sell.toObject()),
+            transfer: analyzeTokenInfo(tokenOut, tokenOut, result.transfer.toObject()),
+            block_number: Number(result.blockNumber),
+            block_timestamp: Number(result.blockTimestamp),
+            tokenIn: {
+                ...tokenIn,
+                amount: FormatNumber(result.account.balanceIn, tokenIn.decimals),
+            },
+            tokenOut: {
+                ...tokenOut,
+                amount: FormatNumber(result.account.balanceOut, tokenOut.decimals),
+            },
+            recipient: result.account.account,
+            simulation: {
+                fork_id: resp.simulation.fork_id,
+                id: resp.simulation.id,
+            },
+            time: dayjs(Number(result.blockTimestamp) * 1000).format("YYYY-MM-DD HH:mm:ss")
+        }
+
+        data.tokenIn.isSwap = data.sell.tokenOut.isSwap;
+        data.tokenIn.isReserve = data.sell.tokenOut.isReserve;
+        data.tokenIn.isAddPair = data.sell.tokenOut.isAddPair;
+
+        data.tokenOut.isSwap = data.sell.tokenIn.isSwap;
+        data.tokenOut.isReserve = data.sell.tokenIn.isReserve;
+        data.tokenOut.isAddPair = data.sell.tokenIn.isAddPair;
+
+        return data
+    })
 }

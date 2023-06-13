@@ -4,13 +4,14 @@ import React, {useState} from "react";
 
 
 interface SelectAccountProps {
-    accounts:{
+    accounts: {
         disabled?: boolean;
         [name: string]: any;
     }[]
+    onSelect?: (value: string) => void
 }
 
-const SelectAccount = ({accounts}:SelectAccountProps) => {
+const SelectAccount = ({accounts,onSelect}: SelectAccountProps) => {
     const [more, setMore] = useState(false)
 
     return <>
@@ -25,16 +26,8 @@ const SelectAccount = ({accounts}:SelectAccountProps) => {
                         className={'full'}
                         allowClear
                         placeholder="请输入钱包"
-                        options={[
-                            {
-                                label: '测试合约',
-                                value: '0xBd770416a3345F91E4B34576cb804a576fa48EB1',
-                            },
-                            {
-                                label: '账号',
-                                options: accounts,
-                            },
-                        ]}
+                        options={accounts}
+                        onSelect={onSelect}
                     />
                 </Form.Item>
                 <Tooltip title={'更多参数'}>

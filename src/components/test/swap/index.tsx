@@ -19,11 +19,16 @@ const Swap = () => {
     const [fee, setFee] = useState<Swap[]>([])
     const [form] = Form.useForm()
     const [loading, setLoading] = useState(false);
-    const [accounts, setAccounts] = useState<any[]>([]);
+    const [accounts, setAccounts] = useState<any[]>([
+        {
+            label: '测试合约',
+            value: '0xBd770416a3345F91E4B34576cb804a576fa48EB1',
+        }
+    ]);
 
     const onFinish = async (values) => {
         setLoading(true)
-        let swap: Swap
+        const swaps: Swap[] = new Array(0);
         try {
             const resp = await submitSimulation({
                 from: values.account,
@@ -34,39 +39,45 @@ const Swap = () => {
                 save: true,
                 value: "0",
             })
-            const href = `https://dashboard.tenderly.co/${tenderly_account.accountName}/${tenderly_account.projectName}/fork/${resp.simulation.fork_id}/simulation/${resp.simulation.id}`
+
             if (resp.transaction.error_message) {
-                swap = {
-                    href,
+                swaps.push({
+                    simulation: {
+                        fork_id: resp.simulation.fork_id,
+                        id: resp.simulation.id,
+                    },
                     key: `${Math.random()}`,
                     error: `${resp.transaction.error_info.error_message} form ${resp.transaction.error_info.address}`,
-                }
+                })
                 return
             }
-            swap = decode(resp.transaction.transaction_info.call_trace.output, values)
-            swap.href = href
+
+            swaps.push(...decode(resp, values))
+
             setAccounts((prevState: any[]) => {
-                const regExp = new RegExp(swap.recipient, "ig");
-                return [
-                    {
-                        label: `${swap.id}账户：${swap.tokenOut.amount}${swap.tokenOut.symbol}`,
+                prevState = [
+                    ...swaps.map(swap => ({
+                        label: `${swap.recipient == TestAddress ? '测试合约' : `${swap.id}账户`}：${swap.tokenOut.amount}${swap.tokenOut.symbol}`,
                         value: swap.recipient,
-                    },
-                    prevState.filter(account => (!regExp.test(account.value) && account.value != TestAddress))
+                    })),
+                    ...prevState
                 ]
+                const map = new Map()
+                return prevState.filter((item) => !map.has(item['value']) && map.set(item['value'],true))
             })
+
         } catch (e) {
             console.log(e)
-            swap = {
+            swaps.push({
                 key: `${Math.random()}`,
                 error: e.toString(),
-            }
+            })
         } finally {
             setLoading(false)
         }
 
         setFee([
-            swap,
+            ...swaps,
             ...fee
         ])
     }
@@ -80,13 +91,14 @@ const Swap = () => {
 
         const tokenIn = explorer.tokens.length > 0 ? explorer.tokens[0] : {}
         let router = explorer.router.find(router => router.address == contract.router);
+
         router = router ? router : explorer.router.length > 0 ? explorer.router[0] : {
             address: contract.router,
         }
 
         form.setFieldsValue({
             router: router,
-            account: TestAddress,
+            account: "0xBd770416a3345F91E4B34576cb804a576fa48EB1",
             recipient: TestAddress,
             tokenOut,
             tokenIn,
@@ -117,6 +129,9 @@ const Swap = () => {
 
             <SelectAccount
                 accounts={accounts}
+                onSelect={(value) => {
+                    form.setFieldValue("recipient", value)
+                }}
             />
 
             <Form.Item>

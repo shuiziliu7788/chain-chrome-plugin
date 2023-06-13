@@ -56,23 +56,11 @@ contract Kill {
     }
 }
 
-contract KillManage {
-    function killAddress(address token0, address token1)
-    internal
-    returns (address)
-    {
-        Kill kill = new Kill(token0, token1);
-        kill.kill();
-        return address(kill);
-    }
-}
-
 contract TestSwap {
     uint256 internal id = 0;
     mapping(uint256 => uint256) internal index;
     address[] internal accounts;
     address internal _this;
-    KillManage internal manage;
 
     enum State {
         DEFAULT,
@@ -99,9 +87,10 @@ contract TestSwap {
         uint256 tradeAmount;
         uint256 recipientAmount;
         uint256 reserveAmount;
+        uint gas;
+        int fee;
         bool isAddPair;
         bool isSwap;
-        int fee;
     }
 
     struct TradeInfo {
@@ -131,7 +120,6 @@ contract TestSwap {
 
     constructor() payable {
         _this = address(this);
-        manage = new KillManage();
     }
 
     function
@@ -194,22 +182,17 @@ contract TestSwap {
         result.blockTimestamp = block.timestamp;
 
         address recipient = call.recipient == address(1) ? _killAddress(call.tokenIn, call.tokenOut) : call.recipient;
-        address sender = tx.origin;
 
         BEP20 WETH = BEP20(Router(call.router).WETH());
         BEP20 IN = BEP20(call.tokenIn);
         BEP20 OUT = BEP20(call.tokenOut);
 
         if (address(this).balance > 0) {
-            WETH.deposit{value: _this.balance}();
+            WETH.deposit {value : _this.balance}();
         }
 
         if (call.tokenIn != address(WETH) && WETH.balanceOf(_this) > 0) {
             try this.swapV2(call.router, address(WETH), call.tokenIn, address(this), address(this), WETH.balanceOf(_this), 0) {} catch {}
-        }
-
-        if (sender != address(this)) {
-            BEP20(call.tokenIn).transfer(sender, BEP20(call.tokenIn).balanceOf(_this));
         }
 
         uint256 balance;
@@ -219,7 +202,7 @@ contract TestSwap {
 
             balance = OUT.balanceOf(pair) * call.buy / 10000;
 
-            try this.swapV2(call.router, call.tokenIn, call.tokenOut, sender, recipient, 0, balance) returns (TradeInfo memory data) {
+            try this.swapV2(call.router, call.tokenIn, call.tokenOut, address(this), recipient, 0, balance) returns (TradeInfo memory data) {
                 result.buy = data;
             } catch Error(string memory reason) {
                 result.buy.state = State.FAIL;
@@ -229,9 +212,9 @@ contract TestSwap {
             }
         }
 
-        balance = OUT.balanceOf(recipient);
+        balance = OUT.balanceOf(call.buy == 0 ? tx.origin : recipient);
 
-        if (result.buy.state != State.FAIL && call.sell > 0 && balance > 0) {
+        if (result.buy.state != State.FAIL && call.sell > 0) {
             try this.swapV2(call.router, call.tokenOut, call.tokenIn, recipient, recipient, balance * call.sell / 10000, 0) returns (TradeInfo memory data) {
                 result.sell = data;
             } catch Error(string memory reason) {
@@ -242,7 +225,7 @@ contract TestSwap {
             }
         }
 
-        if (result.buy.state != State.FAIL && call.transfer > 0 && balance > 0) {
+        if (result.buy.state != State.FAIL && call.transfer > 0) {
             try this.transfer(call.tokenOut, recipient, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
                 result.transfer = info;
             } catch Error(string memory reason) {
@@ -283,6 +266,7 @@ contract TestSwap {
         info.gas -= gasleft();
         return info;
     }
+
     // 转移代币信息
     function _transfer(address token, address from, address to, uint value, bool isPair)
     internal
@@ -291,7 +275,7 @@ contract TestSwap {
         BEP20 TOKEN = BEP20(token);
         BEP20 PAIR = BEP20(to);
         info.transferAmount = value;
-        info.formBeforeBalance = TOKEN.balanceOf(from);
+
         info.recipientBeforeBalance = TOKEN.balanceOf(to);
         uint256 reserve0;
         uint256 reserve1;
@@ -301,14 +285,34 @@ contract TestSwap {
             (reserve0, reserve1,) = PAIR.getReserves();
             totalSupply = PAIR.totalSupply();
         }
+        // 计算出资账号
 
-        if (from != _this && TOKEN.allowance(from, _this) >= value && info.formBeforeBalance >= value) {
-            require(TOKEN.transferFrom(from, to, value), "transferFrom fail");
-        } else {
+        if (from == _this) {
+            info.formBeforeBalance = TOKEN.balanceOf(address(this));
+            info.gas = gasleft();
             require(TOKEN.transfer(to, value), "transfer fail");
+            info.gas -= gasleft();
+            info.formAfterBalance = TOKEN.balanceOf(address(this));
+        } else if (TOKEN.allowance(from, _this) >= value && TOKEN.balanceOf(from) >= value) {
+            info.formBeforeBalance = TOKEN.balanceOf(from);
+            info.gas = gasleft();
+            require(TOKEN.transferFrom(from, to, value), "transferFrom fail");
+            info.gas -= gasleft();
+            info.formAfterBalance = TOKEN.balanceOf(from);
+        } else if (TOKEN.allowance(tx.origin, _this) >= value && TOKEN.balanceOf(tx.origin) >= value) {
+            info.formBeforeBalance = TOKEN.balanceOf(tx.origin);
+            info.gas = gasleft();
+            require(TOKEN.transferFrom(tx.origin, to, value), "transferFrom fail");
+            info.gas -= gasleft();
+            info.formAfterBalance = TOKEN.balanceOf(tx.origin);
+        } else {
+            info.formBeforeBalance = TOKEN.balanceOf(address(this));
+            info.gas = gasleft();
+            require(TOKEN.transfer(to, value), "transfer fail");
+            info.gas -= gasleft();
+            info.formAfterBalance = TOKEN.balanceOf(address(this));
         }
 
-        info.formAfterBalance = TOKEN.balanceOf(from);
         // 接受者的现在余额
         info.recipientAfterBalance = TOKEN.balanceOf(to);
 
@@ -327,14 +331,14 @@ contract TestSwap {
             info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
         }
 
-        unchecked {
+    unchecked {
         // 实际支付的数量
-            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
         // 自动保留的数量
-            info.reserveAmount = value - info.tradeAmount;
+        info.reserveAmount = value - info.tradeAmount;
         // 手续费
-            info.fee = _fee(info.recipientAmount, info.tradeAmount);
-        }
+        info.fee = _fee(info.recipientAmount, info.tradeAmount);
+    }
 
         return info;
     }
@@ -350,23 +354,23 @@ contract TestSwap {
 
         info.formBeforeBalance = TOKEN.balanceOf(pair);
         info.recipientBeforeBalance = TOKEN.balanceOf(to);
-
+        info.gas = gasleft();
         PAIR.swap(
             reserve0,
             reserve1,
             to,
             new bytes(0)
         );
-
+        info.gas -= gasleft();
         info.formAfterBalance = TOKEN.balanceOf(pair);
         info.recipientAfterBalance = TOKEN.balanceOf(to);
 
-        unchecked {
-            info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
-            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
-            info.reserveAmount = info.transferAmount - info.tradeAmount;
-            info.fee = _fee(info.recipientAmount, info.tradeAmount);
-        }
+    unchecked {
+        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+        info.reserveAmount = info.transferAmount - info.tradeAmount;
+        info.fee = _fee(info.recipientAmount, info.tradeAmount);
+    }
 
         return info;
     }
