@@ -76,10 +76,10 @@ const Param = ({onChange, value, add, remove, type}: InputsProps) => {
 
     return <Space.Compact block>
         <AutoComplete
+            className={'w80'}
             value={value.type}
             options={type === 'slot' ? slotType : callType}
             disabled={value.fixed}
-            style={{minWidth: '80px', width: '80px'}}
             onChange={(val: string, option: any) => {
                 onChange({...value, type: val, baseType: option.baseType})
                 setSelect(true)

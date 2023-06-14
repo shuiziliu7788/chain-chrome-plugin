@@ -11,16 +11,13 @@ interface SelectAccountProps {
     onSelect?: (value: string) => void
 }
 
-const SelectAccount = ({accounts,onSelect}: SelectAccountProps) => {
+const SelectAccount = ({accounts, onSelect}: SelectAccountProps) => {
     const [more, setMore] = useState(false)
 
     return <>
         <Form.Item>
-            <Space.Compact className={'aflex'} block>
-                <Input
-                    disabled
-                    value={'钱包'}
-                />
+            <Space.Compact className={'flex'} block>
+                <Button disabled className={'w80'}>钱包</Button>
                 <Form.Item name='account' noStyle>
                     <AutoComplete
                         className={'full'}
@@ -44,6 +41,7 @@ const SelectAccount = ({accounts,onSelect}: SelectAccountProps) => {
             <Col span={12}>
                 <Form.Item name={'gasPrice'}>
                     <Input
+                        className={'addon'}
                         suffix={'Gwei'}
                         placeholder="燃料单价"
                         allowClear
@@ -54,6 +52,7 @@ const SelectAccount = ({accounts,onSelect}: SelectAccountProps) => {
             <Col span={12}>
                 <Form.Item name={'gas'}>
                     <Input
+                        className={'addon'}
                         suffix={'万'}
                         placeholder="燃料上限"
                         allowClear

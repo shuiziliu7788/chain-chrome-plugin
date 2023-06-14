@@ -106,21 +106,23 @@ const FeePopover = ({record}: FeePopoverProps) => {
                         </Space>
                     </Space>
                 </Descriptions.Item>
+                {
+                    (record.tokenOut.isSwap || record.tokenOut.isAddPair || record.tokenOut.isReserve) &&
+                    <Descriptions.Item span={3} label={'备注'}>
+                        <Space size={[0, 12]} split={<Divider type="vertical"/>} wrap>
+                            {
+                                record.tokenOut.isSwap && <span>自动出货</span>
+                            }
+                            {
+                                record.tokenOut.isAddPair && <span>自动添加池子</span>
+                            }
+                            {
+                                record.tokenOut.isReserve && <span>自动保留</span>
+                            }
+                        </Space>
 
-                <Descriptions.Item span={3} label={'备注'}>
-                    <Space size={[0, 12]} split={<Divider type="vertical"/>} wrap>
-                        {
-                            record.tokenOut.isSwap && <span>自动出货</span>
-                        }
-                        {
-                            record.tokenOut.isAddPair && <span>自动添加池子</span>
-                        }
-                        {
-                            record.tokenOut.isReserve && <span>自动保留</span>
-                        }
-                    </Space>
-
-                </Descriptions.Item>
+                    </Descriptions.Item>
+                }
             </>
         }
     </Descriptions>

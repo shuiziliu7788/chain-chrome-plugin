@@ -21,11 +21,11 @@ const Root = (props: RootProps) => {
 
     return <>
         <Form.Item>
-            <Space.Compact className={'aflex'} block>
-                <Input disabled value={'TO'}/>
+            <Space.Compact className={'flex'} block>
+                <Button className={'w80'} disabled>合约</Button>
                 <Form.Item name='to' noStyle>
                     <AutoComplete
-                        className={'full'}
+                        className={'auto'}
                         allowClear
                         placeholder="请输入TO地址"
                         options={props.to_suggestion_address ?? contract.suggestion_address}
@@ -35,14 +35,11 @@ const Root = (props: RootProps) => {
         </Form.Item>
 
         <Form.Item>
-            <Space.Compact className={'aflex'} block>
-                <Input
-                    disabled
-                    value={'FROM'}
-                />
+            <Space.Compact className={'flex'} block>
+                <Button className={'w80'} disabled>调用者</Button>
                 <Form.Item name='from' noStyle>
                     <AutoComplete
-                        className={'full'}
+                        className={'auto'}
                         allowClear
                         placeholder="请输入FROM地址"
                         options={props.from_suggestion_address ?? contract.suggestion_address}
@@ -63,15 +60,17 @@ const Root = (props: RootProps) => {
             <Col span={24}>
                 <Form.Item name={'value'}>
                     <Input
+                        className={'addon'}
                         placeholder="0.1 ether"
                         allowClear
-                        addonBefore={'VALUE'}
+                        addonBefore={'value'}
                     />
                 </Form.Item>
             </Col>
             <Col span={12}>
                 <Form.Item name={'gasPrice'}>
                     <Input
+                        className={'addon'}
                         suffix={'Gwei'}
                         placeholder="燃料单价"
                         allowClear
@@ -82,6 +81,7 @@ const Root = (props: RootProps) => {
             <Col span={12}>
                 <Form.Item name={'gas'}>
                     <Input
+                        className={'addon'}
                         suffix={'万'}
                         placeholder="燃料上限"
                         allowClear

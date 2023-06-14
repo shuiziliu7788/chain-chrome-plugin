@@ -76,11 +76,11 @@ const Name = ({type, onClose, form, loading, debug}: InputProps) => {
 
     return <>
         <Form.Item>
-            <Space.Compact className={'aflex'} block>
+            <Space.Compact className={'flex'} block>
                 <Form.Item name={'type'} noStyle>
                     <Select
                         disabled={debug}
-                        style={{width: '80px'}}
+                        className={'w80'}
                         dropdownStyle={{zIndex: 99999}}
                         options={types}
                     />

@@ -5,7 +5,8 @@ import Send from "@/components/test/send";
 import {useTabFlex} from "@/components/style";
 import Call from "./call";
 import {ConsumerProps, ExplorerContext} from "@/components";
-import Swap from "@/components/test/swap";
+import Swap from "./swap";
+import Liquidity from "./swap/liquidity";
 
 export const Tender = () => {
     const {current_fork} = React.useContext<ConsumerProps>(ExplorerContext);
@@ -37,6 +38,11 @@ export const Tender = () => {
                     label: "交易",
                     key: "swap",
                     children: <Swap/>
+                },
+                {
+                    label: "流动性",
+                    key: "liquidity",
+                    children: <Liquidity/>
                 },
             ]}
             onChange={(e) => {

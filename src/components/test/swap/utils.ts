@@ -1,10 +1,11 @@
 import {tryBlockAndAggregate} from "@/utils/multicall";
-import {AbiCoder, getNumber, getUint} from "ethers";
+import {AbiCoder, getNumber, getUint, toBeHex, zeroPadValue} from "ethers";
 import {Router, Token} from "@/components";
 import {TestSwapIface} from "@/constant";
 import {FormatNumber} from "@/utils/number";
 import dayjs from "dayjs";
 import {Response} from "@/types/tenderly/response";
+import {call} from "@/utils/eth";
 
 export const abiCoder = AbiCoder.defaultAbiCoder()
 
@@ -190,7 +191,7 @@ export const decode = (resp: Response, fields: any): Swap[] => {
     const tokenOut: Token = fields['tokenOut'] ?? {}
     const output = resp.transaction.transaction_info.call_trace.output
     let results = [];
-    // 判断怎么即
+
     if (fields.count > 1) {
         results = TestSwapIface.decodeFunctionResult("many", output)['results']
     } else {
@@ -198,7 +199,6 @@ export const decode = (resp: Response, fields: any): Swap[] => {
     }
 
     return results.map(result => {
-
         const data: Swap = {
             key: `${result.id}-${result.index}-${Math.random()}`,
             id: `${result.id}-${result.index}`,
@@ -232,5 +232,5 @@ export const decode = (resp: Response, fields: any): Swap[] => {
         data.tokenOut.isAddPair = data.sell.tokenIn.isAddPair;
 
         return data
-    })
+    }).reverse()
 }

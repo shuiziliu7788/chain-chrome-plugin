@@ -6,6 +6,7 @@ import {useTabFlex} from "@/components/style";
 const Popup = () => {
     const {styles} = useTabFlex();
 
+
     return <Layout>
         <Card
             title={'网络配置'}
@@ -15,6 +16,7 @@ const Popup = () => {
                 overflowX: 'hidden',
                 padding: 0,
             }}
+            extra={<a href={''} target={'_blank'}>aa</a>}
         >
             <Tabs
                 className={styles.flex}

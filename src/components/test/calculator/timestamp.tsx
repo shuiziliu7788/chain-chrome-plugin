@@ -33,6 +33,7 @@ const Timestamp = () => {
         <Form.Item className={'converter'}>
             <Space.Compact block>
                 <Input
+                    className={'addon'}
                     value={now}
                     allowClear
                     min={0}
@@ -52,6 +53,7 @@ const Timestamp = () => {
         <Form.Item>
             <Space.Compact block>
                 <Input
+                    className={'addon'}
                     disabled
                     value={date}
                     style={{width: 'calc(100% - 32px)'}}

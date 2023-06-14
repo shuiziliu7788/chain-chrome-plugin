@@ -31,23 +31,24 @@
   }
 }
 
-.select-before {
-  width: 80px;
-}
 
-[data-theme='compact'] .select-before {
-  width: 80px;
-}
-
-.ant-input-group-addon {
+.w80,
+.addon .ant-input-group-addon,
+.addon > .ant-input-number-group > .ant-input-number-group-addon {
   width: 80px !important;
+  flex: 0 0 80px;
   overflow: hidden;
-  padding: 0 0 !important;
+  color: #ffffffd9 !important;
 }
 
-.aflex {
+
+.flex {
   display: flex;
   flex-direction: row;
+
+  .auto {
+    flex: auto;
+  }
 
   .ant-input-compact-first-item {
     min-width: 80px;
@@ -61,30 +62,12 @@
     min-width: 80px;
   }
 
-  .full {
-    flex: auto;
-  }
 
   .ant-btn-compact-item {
     width: 32px;
   }
 }
 
-.select-node-popup {
-  .ant-select-item-option-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .anticon-delete {
-      display: block !important;
-
-      &:hover {
-        color: #ccc;
-      }
-    }
-  }
-}
 
 * {
   &::-webkit-scrollbar {

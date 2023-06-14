@@ -64,12 +64,8 @@ export const ABI = () => {
             </Form.Item>
 
             <Form.Item>
-                <Space.Compact className={'aflex'}>
-                    <Input
-                        disabled
-                        style={{width: 80, textAlign: 'center'}}
-                        value={'签名ID'}
-                    />
+                <Space.Compact className={'flex'}>
+                    <Button disabled className={'w80'}>签名ID</Button>
                     <Form.Item noStyle>
                         <Input
                             value={fragment ? fragment.signature_hash : ""}
@@ -105,12 +101,8 @@ export const ABI = () => {
             </Form.List>
 
             <Form.Item>
-                <Space.Compact className={'aflex'}>
-                    <Input
-                        disabled
-                        style={{width: 80, textAlign: 'center'}}
-                        value={'数据'}
-                    />
+                <Space.Compact className={'flex'}>
+                    <Button disabled className={'w80'}>数据</Button>
                     <Form.Item noStyle>
                         <Input
                             value={fragment ? fragment.input : ""}

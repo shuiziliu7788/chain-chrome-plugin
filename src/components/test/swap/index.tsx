@@ -1,4 +1,4 @@
-import {AutoComplete, Button, Card, Col, Form, Input, InputNumber, Row, Space, Tooltip} from "antd";
+import {AutoComplete, Button, Card, Col, Form, InputNumber, Row, Space, Tooltip} from "antd";
 import React, {useContext, useEffect, useState} from "react";
 import {ConsumerProps, ExplorerContext} from "@/components";
 import SelectToken from "./SelectToken";
@@ -12,7 +12,6 @@ const Swap = () => {
     const {
         contract,
         submitSimulation,
-        tenderly_account,
         explorer
     } = useContext<ConsumerProps>(ExplorerContext);
 
@@ -28,58 +27,59 @@ const Swap = () => {
 
     const onFinish = async (values) => {
         setLoading(true)
-        const swaps: Swap[] = new Array(0);
-        try {
-            const resp = await submitSimulation({
-                from: values.account,
-                gas_limit: values.gas,
-                to: TestAddress,
-                gas_price: values.gasPrice,
-                input: encode(values),
-                save: true,
-                value: "0",
-            })
 
-            if (resp.transaction.error_message) {
-                swaps.push({
-                    simulation: {
-                        fork_id: resp.simulation.fork_id,
-                        id: resp.simulation.id,
-                    },
-                    key: `${Math.random()}`,
-                    error: `${resp.transaction.error_info.error_message} form ${resp.transaction.error_info.address}`,
+        for (let i = 0; i < values.quantity ?? 1; i++) {
+            const swaps: Swap[] = [];
+
+            try {
+                const resp = await submitSimulation({
+                    from: values.account,
+                    gas_limit: values.gas,
+                    to: TestAddress,
+                    gas_price: values.gasPrice,
+                    input: encode(values),
+                    save: true,
+                    value: "0",
                 })
-                return
+                if (resp.transaction.error_message) {
+                    swaps.push({
+                        simulation: {
+                            fork_id: resp.simulation.fork_id,
+                            id: resp.simulation.id,
+                        },
+                        key: `${Math.random()}`,
+                        error: `${resp.transaction.error_info.error_message} form ${resp.transaction.error_info.address}`,
+                    })
+                    return
+                }
+                swaps.push(...decode(resp, values))
+                setAccounts((prevState: any[]) => {
+                    prevState = [
+                        ...swaps.map(swap => ({
+                            label: `${swap.recipient == TestAddress ? '测试合约' : `${swap.id}账户`}：${swap.tokenOut.amount}${swap.tokenOut.symbol}`,
+                            value: swap.recipient,
+                        })),
+                        ...prevState
+                    ]
+                    const map = new Map()
+                    return prevState.filter((item) => !map.has(item['value']) && map.set(item['value'], true))
+                })
+            } catch (e) {
+                swaps.push({
+                    key: `${Math.random()}`,
+                    error: e.toString(),
+                })
             }
 
-            swaps.push(...decode(resp, values))
-
-            setAccounts((prevState: any[]) => {
-                prevState = [
-                    ...swaps.map(swap => ({
-                        label: `${swap.recipient == TestAddress ? '测试合约' : `${swap.id}账户`}：${swap.tokenOut.amount}${swap.tokenOut.symbol}`,
-                        value: swap.recipient,
-                    })),
-                    ...prevState
+            setFee((fees) => {
+                return [
+                    ...swaps,
+                    ...fees
                 ]
-                const map = new Map()
-                return prevState.filter((item) => !map.has(item['value']) && map.set(item['value'],true))
             })
-
-        } catch (e) {
-            console.log(e)
-            swaps.push({
-                key: `${Math.random()}`,
-                error: e.toString(),
-            })
-        } finally {
-            setLoading(false)
         }
 
-        setFee([
-            ...swaps,
-            ...fee
-        ])
+        setLoading(false)
     }
 
     useEffect(() => {
@@ -117,6 +117,7 @@ const Swap = () => {
                 amountSell: 60,
                 amountTransfer: 40,
                 count: 1,
+                quantity: 1,
             }}
             scrollToFirstError={true}
         >
@@ -219,11 +220,8 @@ const Swap = () => {
             </Form.Item>
 
             <Form.Item>
-                <Space.Compact className={'aflex'} block>
-                    <Input
-                        disabled
-                        value={'接受'}
-                    />
+                <Space.Compact className={'flex'} block>
+                    <Button disabled className={'w80'}>接受者</Button>
                     <Form.Item name={'recipient'} noStyle>
                         <AutoComplete
                             className={'full'}
@@ -243,21 +241,36 @@ const Swap = () => {
                     </Form.Item>
                 </Space.Compact>
             </Form.Item>
-
-            <Row gutter={[12, 12]}>
-                <Col span={12}>
-                    <Form.Item name={'count'}>
-                        <InputNumber
-                            min={1}
-                            max={30}
-                            addonBefore={'次数'}
-                        />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Button loading={loading} htmlType={'submit'} block type={'primary'}>交易</Button>
-                </Col>
-            </Row>
+            <Form.Item>
+                <Row gutter={[12, 12]}>
+                    <Col span={12}>
+                        <Space.Compact block>
+                            <Form.Item name={'quantity'} noStyle>
+                                <InputNumber
+                                    style={{width: 185}}
+                                    min={1}
+                                    max={5}
+                                    addonBefore={'购买'}
+                                    addonAfter={'次，每'}
+                                    controls={false}
+                                />
+                            </Form.Item>
+                            <Form.Item name={'count'} noStyle>
+                                <InputNumber
+                                    style={{width: 90}}
+                                    min={1}
+                                    max={10}
+                                    addonAfter={'单'}
+                                    controls={false}
+                                />
+                            </Form.Item>
+                        </Space.Compact>
+                    </Col>
+                    <Col span={12}>
+                        <Button loading={loading} htmlType={'submit'} block type={'primary'}>交易</Button>
+                    </Col>
+                </Row>
+            </Form.Item>
             <FeeView
                 dataSource={fee}
             />

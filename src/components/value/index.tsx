@@ -45,24 +45,24 @@ export const Value = (props: HashValueProps) => {
     }
 
     return <Form.Item style={{width: '100%'}}>
-        <Space.Compact className={'aflex'} size={'middle'} block>
+        <Space.Compact className={'flex'} size={'middle'} block>
             {
                 value.name && <Input
                     disabled
-                    style={{width: 80, textAlign: 'center'}}
+                    className={'w80'}
                     value={value.name}
                 />
             }
             {
                 !value.fixed && <Select
-                    style={{width: 80}}
+                    className={'w80'}
                     value={value.type}
                     options={typeOptions}
                     onChange={onChangeType}
                 />
             }
             <Input
-                style={{flex: 'auto'}}
+                className={'auto'}
                 disabled
                 value={value.value}
             />

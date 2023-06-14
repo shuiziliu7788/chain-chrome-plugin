@@ -19,7 +19,7 @@ const FeeView = ({dataSource}: { dataSource: Swap[] }) => {
                 {
                     !record.error && <Popover
                         destroyTooltipOnHide={true}
-                        placement={'left'}
+                        placement={'leftBottom'}
                         title={<FeePopover record={record}/>}
                     >
                         <EyeOutlined

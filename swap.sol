@@ -58,7 +58,8 @@ contract Kill {
 
 contract TestSwap {
     uint256 internal id = 0;
-    mapping(uint256 => uint256) internal index;
+    uint256 internal lastNumber = 0;
+    uint256 internal index = 0;
     address[] internal accounts;
     address internal _this;
 
@@ -118,6 +119,16 @@ contract TestSwap {
         uint256 blockTimestamp;
     }
 
+    modifier theSwap() {
+        if (block.number > lastNumber) {
+            lastNumber = block.number;
+            index = 0;
+            id += 1;
+        }
+        index += 1;
+        _;
+    }
+
     constructor() payable {
         _this = address(this);
     }
@@ -171,13 +182,12 @@ contract TestSwap {
     function one(TradeCall calldata call)
     public
     payable
+    theSwap
     returns
     (TradeResult memory result)
     {
-        id += 1;
-        index[id] += 1;
         result.id = id;
-        result.index = index[id];
+        result.index = index;
         result.blockNumber = block.number;
         result.blockTimestamp = block.timestamp;
 
@@ -188,7 +198,7 @@ contract TestSwap {
         BEP20 OUT = BEP20(call.tokenOut);
 
         if (address(this).balance > 0) {
-            WETH.deposit {value : _this.balance}();
+            WETH.deposit{value: _this.balance}();
         }
 
         if (call.tokenIn != address(WETH) && WETH.balanceOf(_this) > 0) {
@@ -331,14 +341,14 @@ contract TestSwap {
             info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
         }
 
-    unchecked {
+        unchecked {
         // 实际支付的数量
-        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
         // 自动保留的数量
-        info.reserveAmount = value - info.tradeAmount;
+            info.reserveAmount = value - info.tradeAmount;
         // 手续费
-        info.fee = _fee(info.recipientAmount, info.tradeAmount);
-    }
+            info.fee = _fee(info.recipientAmount, info.tradeAmount);
+        }
 
         return info;
     }
@@ -365,12 +375,12 @@ contract TestSwap {
         info.formAfterBalance = TOKEN.balanceOf(pair);
         info.recipientAfterBalance = TOKEN.balanceOf(to);
 
-    unchecked {
-        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
-        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
-        info.reserveAmount = info.transferAmount - info.tradeAmount;
-        info.fee = _fee(info.recipientAmount, info.tradeAmount);
-    }
+        unchecked {
+            info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+            info.reserveAmount = info.transferAmount - info.tradeAmount;
+            info.fee = _fee(info.recipientAmount, info.tradeAmount);
+        }
 
         return info;
     }
@@ -393,7 +403,7 @@ contract TestSwap {
     view
     returns (address)
     {
-        return address(uint160(uint(keccak256(abi.encode(id, index[id], block.number, block.timestamp)))));
+        return address(uint160(uint(keccak256(abi.encode(id, index, block.number, block.timestamp)))));
     }
 
     // 创建直接销毁
