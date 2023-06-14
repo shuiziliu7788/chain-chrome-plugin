@@ -5,8 +5,8 @@ import type {Account, Fork, ForkRequest, SimulationRequest} from "@/types/tender
 import type {ConsumerProps, Contract, Explorer, Method} from "./typing";
 import type {Request} from "@/background/messages/proxy";
 import request from "@/utils/request";
-import {info} from "@/components/provider/utils";
 import {TestSwapCode} from "@/constant";
+import {getCreationTransaction, info} from "./utils";
 
 export type Hooks = () => ConsumerProps
 
@@ -32,7 +32,6 @@ const useHooks: Hooks = () => {
         pair: undefined,
         suggestion_address: []
     });
-
     const [tenderly_account, setTenderlyAccount] = useStorage<Account>("tenderly");
     const [forkLoading, setForksLoading] = useState<boolean>(false);
     const [createLoading, setCreateLoading] = useState<boolean>(false);
@@ -129,7 +128,7 @@ const useHooks: Hooks = () => {
                     method: 'DELETE',
                 })
                 await fetchForks()
-                if (current_fork && current_fork.id == fork_id){
+                if (current_fork && current_fork.id == fork_id) {
                     setCurrentFork(undefined)
                 }
                 resolve(true)
@@ -152,6 +151,18 @@ const useHooks: Hooks = () => {
         })
     }
 
+    const getInfo = async () => {
+        const c = await info(explorer.rpc, contract.address ?? zeroAddress)
+        setContract((prevState) => {
+            return {...prevState, ...c}
+        })
+        if (!c.symbol) {
+            return
+        }
+        const tx = await getCreationTransaction(explorer, contract.address)
+        console.log(tx)
+    }
+
     useEffect(() => {
         if (tenderly_account) {
             fetchForks().catch(e => {
@@ -161,23 +172,13 @@ const useHooks: Hooks = () => {
     }, [tenderly_account])
 
     useEffect(() => {
-        const addr = address(document.location.href)
-
         if (!explorer || !explorer.rpc) {
             return
         }
-        info(explorer.rpc, addr ?? zeroAddress).then(r => {
-            if (!r) {
-                return
-            }
-            setContract((prevState) => {
-                return {...prevState, ...r}
-            })
-        }).catch(e => {
+        getInfo().catch(e => {
             console.log(e)
         })
     }, [explorer])
-
 
     return {
         contract,

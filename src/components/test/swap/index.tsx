@@ -193,7 +193,6 @@ const Swap = () => {
                         <InputNumber
                             precision={2}
                             controls={false}
-                            placeholder={'0'}
                             min={0}
                             max={100}
                             addonBefore={'卖'}
@@ -204,12 +203,12 @@ const Swap = () => {
                     <Form.Item
                         rules={[{required: true, message: '请输入转百分比'}]}
                         name={'amountTransfer'}
+                        tooltip={'sssssssssssss'}
                         noStyle
                     >
                         <InputNumber
                             precision={2}
                             controls={false}
-                            placeholder={'0'}
                             min={0}
                             max={100}
                             addonBefore={'转'}
@@ -243,30 +242,30 @@ const Swap = () => {
             </Form.Item>
             <Form.Item>
                 <Row gutter={[12, 12]}>
-                    <Col span={12}>
+
+                    <Col span={15}>
                         <Space.Compact block>
                             <Form.Item name={'quantity'} noStyle>
                                 <InputNumber
-                                    style={{width: 185}}
+                                    style={{width: 230}}
                                     min={1}
                                     max={5}
                                     addonBefore={'购买'}
                                     addonAfter={'次，每'}
-                                    controls={false}
                                 />
                             </Form.Item>
                             <Form.Item name={'count'} noStyle>
                                 <InputNumber
-                                    style={{width: 90}}
+                                    style={{width: 135}}
                                     min={1}
                                     max={10}
                                     addonAfter={'单'}
-                                    controls={false}
                                 />
                             </Form.Item>
                         </Space.Compact>
                     </Col>
-                    <Col span={12}>
+
+                    <Col span={9}>
                         <Button loading={loading} htmlType={'submit'} block type={'primary'}>交易</Button>
                     </Col>
                 </Row>

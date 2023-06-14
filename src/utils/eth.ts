@@ -1,8 +1,7 @@
 import request from "@/utils/request";
 import {parseUnits} from "ethers";
+import type {TransactionReceiptParams} from "ethers/src.ts/providers/formatting";
 
-
-type HexString = string
 
 export interface Transaction {
     from?: string
@@ -19,11 +18,10 @@ export interface Result {
         code: number
         message: string
     }
-    result: string
-
+    result: any
 }
 
-const rpc = async (host: string, method: string, params?: any): Promise<any> => {
+const rpc = async <T>(host: string, method: string, params?: any): Promise<T> => {
     const resp = await request<Result>({
         host,
         method: 'POST',
@@ -40,10 +38,10 @@ const rpc = async (host: string, method: string, params?: any): Promise<any> => 
     if (resp.error) {
         throw new Error(resp.error.message)
     }
-    return resp
+    return resp.result
 }
 
-export const call = (node: string, transaction: Transaction): Promise<HexString> => {
+export const call = (node: string, transaction: Transaction): Promise<string> => {
     ["gasPrice", "value", "gas"].forEach((key) => {
         if (!transaction[key] || transaction[key] === '' || transaction[key] <= 0) {
             delete transaction[key]
@@ -52,17 +50,14 @@ export const call = (node: string, transaction: Transaction): Promise<HexString>
         const decimals = key === 'value' ? 18 : key === 'gasPrice' ? 9 : 4
         transaction[key] = "0x" + parseUnits(transaction[key], decimals).toString(16)
     });
-    return rpc(node, "eth_call", [transaction, "latest"]).then<HexString>((resp: Result) => (resp.result))
+
+    return rpc<string>(node, "eth_call", [transaction, "latest"])
 }
 
-export const getStorageAt = (node: string, address: string, key: string) => {
-    return rpc(node, "eth_getStorageAt", [address, key, "latest"]).then<HexString>((resp: Result) => (resp.result))
+export const getStorageAt = (node: string, address: string, key: string): Promise<string> => {
+    return rpc<string>(node, "eth_getStorageAt", [address, key, "latest"])
 }
 
-export const estimateGas = (node, transaction) => {
-    return rpc(node, "eth_estimateGas", [transaction, "latest"])
-}
-
-export const getCode = (node, address) => {
-    return rpc(node, "eth_getCode", [address, "latest"])
+export const getTransactionReceipt = (node: string, hash: string): Promise<TransactionReceiptParams> => {
+    return rpc<any>(node, "eth_getTransactionReceipt", [hash])
 }

@@ -1,4 +1,4 @@
-import {Button, Card, Form, Input, message, Space} from "antd";
+import {App, Button, Card, Form, Input, Space} from "antd";
 import SelectRouter from "@/components/test/swap/SelectRouter";
 import React, {useContext, useEffect, useState} from "react";
 import SelectToken from "@/components/test/swap/SelectToken";
@@ -9,9 +9,11 @@ import {concat, formatUnits, getUint, parseUnits, toBeHex, zeroPadValue} from "e
 import {call} from "@/utils/eth";
 import {TestAddress} from "./utils";
 import {TestSwapIface} from "@/constant";
-
+import HashValue from "@/components/value";
+import {ParamType} from "@/utils/function";
 
 const Liquidity = () => {
+    const {message} = App.useApp();
     const [form] = Form.useForm()
     const tokenInSymbol = Form.useWatch(['tokenIn', 'symbol'], form)
     const tokenOutSymbol = Form.useWatch(['tokenOut', 'symbol'], form)
@@ -19,16 +21,20 @@ const Liquidity = () => {
     const tokenOutAddress = Form.useWatch(['tokenOut', 'address'], form)
     const [max, setMax] = useState<bigint>(0n)
     const [loading, setLoading] = useState<boolean>(false)
+    const [err, setErr] = useState<string>()
+    const [outputs, setOutputs] = useState<ParamType[]>([])
     const [accounts, setAccounts] = useState<any[]>([]);
     const {contract, submitSimulation, explorer} = useContext<ConsumerProps>(ExplorerContext);
 
     const onFinish = async (values) => {
         setLoading(true)
+        setOutputs([])
+        setErr("")
         try {
             values.amountIn = parseUnits(values.amountIn, values.tokenIn.decimals)
             values.amountOut = parseUnits(values.amountOut, values.tokenOut.decimals)
             // 第一步授权tokenOut
-            const approve = await submitSimulation({
+            await submitSimulation({
                 from: values.account,
                 gas_limit: values.gas,
                 to: values.tokenOut.address,
@@ -40,6 +46,7 @@ const Liquidity = () => {
                 ]),
                 save: true,
             })
+
             // 第二部 添加池子
             const addLiquifyV2 = await submitSimulation({
                 from: values.account,
@@ -47,7 +54,7 @@ const Liquidity = () => {
                 to: TestAddress,
                 gas_price: values.gasPrice,
                 input: TestSwapIface.encodeFunctionData("addLiquifyV2", [{
-                    router: values.router,
+                    router: values.router.address,
                     tokenIn: values.tokenIn.address,
                     tokenOut: values.tokenOut.address,
                     amountIn: values.amountIn,
@@ -55,12 +62,27 @@ const Liquidity = () => {
                 }]),
                 save: true,
             })
+
             if (addLiquifyV2.transaction.error_message) {
                 message.error(addLiquifyV2.transaction.error_message)
                 return
             }
-        } catch (e) {
 
+            const result = TestSwapIface.decodeFunctionResult("addLiquifyV2", addLiquifyV2.transaction.transaction_info.call_trace.output);
+            const outputs = TestSwapIface.getFunction('addLiquifyV2').outputs;
+            setOutputs((): ParamType[] => {
+                return outputs.map((output): ParamType => {
+                    return {
+                        name: output.name,
+                        baseType: output.baseType,
+                        type: output.type,
+                        fixed: true,
+                        value: result.getValue(output.name),
+                    }
+                })
+            })
+        } catch (e) {
+            setErr(e.toString())
         } finally {
             setLoading(false)
         }
@@ -205,8 +227,14 @@ const Liquidity = () => {
                     添加池子
                 </Button>
             </Form.Item>
-
-
+            {
+                err && <Form.Item validateStatus={'error'}>
+                    <Input disabled style={{color: '#dc4446'}} value={err}/>
+                </Form.Item>
+            }
+            {
+                outputs.map((value, index) => <HashValue index={index} key={index} value={value}/>)
+            }
         </Form>
     </Card>
 }

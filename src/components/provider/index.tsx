@@ -12,7 +12,8 @@ import type {
 } from "./typing";
 
 export const ExplorerContext = React.createContext<ConsumerProps>({
-    setExplorer(explorer: Explorer): void {
+    setExplorer(explorer: Explorer):  Promise<any> {
+        throw new Error("Function not implemented.");
     },
     explorer: undefined,
     contract: undefined,
