@@ -185,7 +185,6 @@ export const analyzeTokenInfo = (tokenIn: Token, tokenOut: Token, info: any): Tr
     }
 }
 
-
 export const decode = (resp: Response, fields: any): Swap[] => {
     const tokenIn: Token = fields['tokenIn'] ?? {}
     const tokenOut: Token = fields['tokenOut'] ?? {}

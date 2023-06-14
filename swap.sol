@@ -36,6 +36,8 @@ interface BEP20 {
 
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 
+    function mint(address to) external returns (uint liquidity);
+
     function deposit() external payable;
 
     function withdraw(uint) external;
@@ -43,6 +45,8 @@ interface BEP20 {
 
 interface IFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
+
+    function createPair(address tokenA, address tokenB) external returns (address pair);
 }
 
 contract Kill {
@@ -67,6 +71,14 @@ contract TestSwap {
         DEFAULT,
         SUCCESS,
         FAIL
+    }
+
+    struct LiquifyCall {
+        address router;
+        address tokenIn;
+        address tokenOut;
+        uint256 amountIn;
+        uint256 amountOut;
     }
 
     struct TradeCall {
@@ -129,6 +141,17 @@ contract TestSwap {
         _;
     }
 
+    modifier automated(address router, address token) {
+        if (address(this).balance > 0) {
+            BEP20 WETH = BEP20(Router(router).WETH());
+            WETH.deposit{value: _this.balance}();
+            if (token != address(WETH) && WETH.balanceOf(_this) > 0) {
+                try this.swapV2(router, address(WETH), token, address(this), address(this), WETH.balanceOf(_this), 0) {} catch {}
+            }
+        }
+        _;
+    }
+
     constructor() payable {
         _this = address(this);
     }
@@ -179,10 +202,31 @@ contract TestSwap {
         return info;
     }
 
+    function addLiquifyV2(LiquifyCall calldata call)
+    public
+    automated(call.router, call.tokenIn)
+    payable
+    returns
+    (address pair, uint liquidity)
+    {
+        address factory = Router(call.router).factory();
+        pair = IFactory(factory).getPair(call.tokenIn, call.tokenOut);
+
+        if (pair == address(0)) {
+            pair = IFactory(factory).createPair(call.tokenIn, call.tokenOut);
+        }
+        _transfer(call.tokenIn, address(this), pair, call.amountIn, false);
+        _transfer(call.tokenOut, tx.origin, pair, call.amountOut, false);
+        liquidity =  BEP20(pair).mint(address(this));
+        return (pair,liquidity);
+    }
+
+
     function one(TradeCall calldata call)
     public
     payable
     theSwap
+    automated(call.router, call.tokenIn)
     returns
     (TradeResult memory result)
     {
@@ -190,20 +234,9 @@ contract TestSwap {
         result.index = index;
         result.blockNumber = block.number;
         result.blockTimestamp = block.timestamp;
-
         address recipient = call.recipient == address(1) ? _killAddress(call.tokenIn, call.tokenOut) : call.recipient;
-
-        BEP20 WETH = BEP20(Router(call.router).WETH());
         BEP20 IN = BEP20(call.tokenIn);
         BEP20 OUT = BEP20(call.tokenOut);
-
-        if (address(this).balance > 0) {
-            WETH.deposit{value: _this.balance}();
-        }
-
-        if (call.tokenIn != address(WETH) && WETH.balanceOf(_this) > 0) {
-            try this.swapV2(call.router, address(WETH), call.tokenIn, address(this), address(this), WETH.balanceOf(_this), 0) {} catch {}
-        }
 
         uint256 balance;
 
@@ -222,9 +255,8 @@ contract TestSwap {
             }
         }
 
-        balance = OUT.balanceOf(call.buy == 0 ? tx.origin : recipient);
-
         if (result.buy.state != State.FAIL && call.sell > 0) {
+            balance = OUT.balanceOf(call.buy == 0 ? tx.origin : recipient);
             try this.swapV2(call.router, call.tokenOut, call.tokenIn, recipient, recipient, balance * call.sell / 10000, 0) returns (TradeInfo memory data) {
                 result.sell = data;
             } catch Error(string memory reason) {
@@ -236,6 +268,7 @@ contract TestSwap {
         }
 
         if (result.buy.state != State.FAIL && call.transfer > 0) {
+            balance = OUT.balanceOf(call.buy == 0 ? tx.origin : recipient);
             try this.transfer(call.tokenOut, recipient, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
                 result.transfer = info;
             } catch Error(string memory reason) {
@@ -247,6 +280,7 @@ contract TestSwap {
         }
 
         result.account = Account(recipient, IN.balanceOf(recipient), OUT.balanceOf(recipient));
+
         return result;
     }
 

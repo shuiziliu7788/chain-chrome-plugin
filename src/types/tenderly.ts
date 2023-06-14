@@ -1,6 +1,7 @@
 interface Wallet {
     [key: string]: string
 }
+
 export interface Account {
     accountName: string
     accessKey: string
@@ -32,7 +33,7 @@ export interface SimulationRequest {
     gas_price: string | number
     input: string
     to?: string
-    value: string | number
+    value?: string | number
     save: boolean
     skip_fork_head_update?: boolean
     network_id?: string

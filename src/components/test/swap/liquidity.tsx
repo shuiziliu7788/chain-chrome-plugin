@@ -1,12 +1,15 @@
-import {Button, Card, Form, Input, InputNumber, Space} from "antd";
+import {Button, Card, Form, Input, message, Space} from "antd";
 import SelectRouter from "@/components/test/swap/SelectRouter";
 import React, {useContext, useEffect, useState} from "react";
 import SelectToken from "@/components/test/swap/SelectToken";
 import {SwapOutlined} from "@ant-design/icons";
 import {ConsumerProps, ExplorerContext} from "@/components";
 import SelectAccount from "@/components/test/swap/SelectAccount";
-import {concat, formatUnits, getUint, toBeHex, zeroPadValue} from "ethers";
+import {concat, formatUnits, getUint, parseUnits, toBeHex, zeroPadValue} from "ethers";
 import {call} from "@/utils/eth";
+import {TestAddress} from "./utils";
+import {TestSwapIface} from "@/constant";
+
 
 const Liquidity = () => {
     const [form] = Form.useForm()
@@ -15,11 +18,52 @@ const Liquidity = () => {
     const account = Form.useWatch('account', form)
     const tokenOutAddress = Form.useWatch(['tokenOut', 'address'], form)
     const [max, setMax] = useState<bigint>(0n)
+    const [loading, setLoading] = useState<boolean>(false)
     const [accounts, setAccounts] = useState<any[]>([]);
     const {contract, submitSimulation, explorer} = useContext<ConsumerProps>(ExplorerContext);
 
     const onFinish = async (values) => {
+        setLoading(true)
+        try {
+            values.amountIn = parseUnits(values.amountIn, values.tokenIn.decimals)
+            values.amountOut = parseUnits(values.amountOut, values.tokenOut.decimals)
+            // 第一步授权tokenOut
+            const approve = await submitSimulation({
+                from: values.account,
+                gas_limit: values.gas,
+                to: values.tokenOut.address,
+                gas_price: values.gasPrice,
+                input: concat([
+                    "0x095ea7b3",
+                    zeroPadValue(TestAddress, 32),
+                    zeroPadValue(toBeHex(values.amountOut), 32),
+                ]),
+                save: true,
+            })
+            // 第二部 添加池子
+            const addLiquifyV2 = await submitSimulation({
+                from: values.account,
+                gas_limit: values.gas,
+                to: TestAddress,
+                gas_price: values.gasPrice,
+                input: TestSwapIface.encodeFunctionData("addLiquifyV2", [{
+                    router: values.router,
+                    tokenIn: values.tokenIn.address,
+                    tokenOut: values.tokenOut.address,
+                    amountIn: values.amountIn,
+                    amountOut: values.amountOut,
+                }]),
+                save: true,
+            })
+            if (addLiquifyV2.transaction.error_message) {
+                message.error(addLiquifyV2.transaction.error_message)
+                return
+            }
+        } catch (e) {
 
+        } finally {
+            setLoading(false)
+        }
     }
 
     useEffect(() => {
@@ -61,7 +105,6 @@ const Liquidity = () => {
         })
 
     }, [account, tokenOutAddress])
-
 
     return <Card className={'tool-card'}>
         <Form
@@ -125,7 +168,7 @@ const Liquidity = () => {
                         name={'amountIn'}
                         noStyle
                     >
-                        <InputNumber
+                        <Input
                             style={{width: '100%'}}
                             placeholder={`请输入${tokenInSymbol}数量,自动兑换`}
                         />
@@ -158,8 +201,12 @@ const Liquidity = () => {
             </Form.Item>
 
             <Form.Item>
-                <Button htmlType={'submit'} type={'primary'} block>添加池子</Button>
+                <Button loading={loading} htmlType={'submit'} type={'primary'} block>
+                    添加池子
+                </Button>
             </Form.Item>
+
+
         </Form>
     </Card>
 }
