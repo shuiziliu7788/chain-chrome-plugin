@@ -3,20 +3,30 @@ import type {Response} from "@/types/tenderly/response";
 import React from "react";
 
 export interface Option {
-    label: string
-    value: string
+    label?: string
+    value?: string
+}
+
+export interface Token {
+    address: string
+    name?: string,
+    symbol?: string,
+    decimals?: number,
+    totalSupply?: string,
 }
 
 export interface Contract {
-    address: string,
+    address?: string,
     block_number: number,
-    symbol: string,
-    decimals: number,
-    chain_id: number,
-    pair?: string,
+    chain_id?: number,
     owner?: string,
-    router?: string,
-    suggestion_address: Option[]
+    creator?: string,
+    router?: Router | string,
+    txHash?: string,
+    pool?: Token,
+    pools?: Token[],
+    token?: Token,
+    suggestion_address: Option[],
 }
 
 export interface Method {
@@ -89,22 +99,18 @@ export interface Router {
     version?: number
 }
 
-export interface Token {
-    address: string
-    name?: string,
-    symbol: string,
-    decimals: number,
-    totalSupply?: string,
-}
-
 export interface Explorer {
     enable: boolean
     rpc: string
+    host?: string
+    developer_host?: string
     secret_key?: string
     router: Router[],
     tokens: Token[]
 }
 
-export interface Dict {
-    [key: string]: Method[]
+export type MethodType = "owner" | "pair" | "router"
+
+export interface Dict extends Option {
+    type?: MethodType
 }

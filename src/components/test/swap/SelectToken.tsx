@@ -1,7 +1,6 @@
 import {Select} from "antd";
-import {getToken} from "./utils";
 import {CSSProperties, useContext} from "react";
-import {ConsumerProps, ExplorerContext, Token} from "@/components";
+import {checkAddress, ConsumerProps, ExplorerContext, getTokenInfo, Token} from "@/components";
 
 
 interface SelectToken {
@@ -13,33 +12,19 @@ interface SelectToken {
 const SelectToken = ({value, onChange, style}: SelectToken) => {
     const {explorer, setExplorer, contract} = useContext<ConsumerProps>(ExplorerContext);
 
-    const tokens = contract.symbol == '' ? explorer.tokens : [
-        {
-            symbol: contract.symbol,
-            address: contract.address,
-            decimals: contract.decimals,
-        },
-        ...explorer.tokens
-    ]
-
     const onSearch = async (address: string) => {
         if (typeof address != 'string' || !/^0x[0-9a-fA-F]{40}$/g.test(address.trim())) {
             return
         }
         try {
-            const regExp = new RegExp(address, 'ig');
-            const index = explorer.tokens.findIndex((t) => {
-                return regExp.test(t.address)
-            })
-            if (index >= 0) {
+            address = checkAddress(address)
+            if (explorer.tokens.findIndex((t) => t.address == address) >= 0) {
                 return
             }
+            const token = await getTokenInfo(explorer.rpc, address)
             await setExplorer({
                 ...explorer,
-                tokens: [
-                    await getToken(explorer.rpc, address),
-                    ...explorer.tokens
-                ].slice(0, 20)
+                tokens: [token, ...explorer.tokens].slice(0, 6)
             })
         } catch (e) {
             console.error(e)
@@ -56,10 +41,10 @@ const SelectToken = ({value, onChange, style}: SelectToken) => {
             label: 'symbol',
             value: 'address',
         }}
-        options={tokens}
+        options={contract.token ? [contract.token, ...explorer.tokens] : explorer.tokens}
         onSelect={(value, option) => {
             onChange && onChange(option)
-            if (value == contract.address) {
+            if (contract.token && contract.token.address == value) {
                 return
             }
             return setExplorer({

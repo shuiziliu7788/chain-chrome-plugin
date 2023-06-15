@@ -5,6 +5,7 @@ import {ConsumerProps, ExplorerContext} from "../provider";
 import {sendToBackground} from "@plasmohq/messaging";
 import request from "@/utils/request";
 import type {Download} from "@/background/messages/download";
+import type {Source} from "./typing";
 
 const escape2Html = (str: string): string => {
     const arrEntities = {'lt': '<', 'gt': '>', 'nbsp': ' ', 'amp': '&', 'quot': '"'};
@@ -13,19 +14,20 @@ const escape2Html = (str: string): string => {
     });
 }
 
+
 export const Solidity = () => {
     const {message} = App.useApp()
     const {contract, explorer} = React.useContext<ConsumerProps>(ExplorerContext);
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(false)
 
-    const source = async () => {
-        let sourceCode = ""
-        let host = `https://api.${location.host}/api`
-        if (location.host == 'scan.pego.network') {
-            host = `https:/${location.host}/api`
+    const getSource = async (): Promise<Source> => {
+        const source: Source = {
+            open: false,
+            code: '',
+            tag: []
         }
-
+        const host = explorer.developer_host ?? `https://api.${location.host}/api`
         const resp = await request<any>({
             host,
             method: 'GET',
@@ -33,81 +35,82 @@ export const Solidity = () => {
                 module: "contract",
                 action: "getsourcecode",
                 address: contract.address,
-                apikey: explorer.secret_key,
+                apikey: explorer.secret_key ?? "",
             }
         })
 
-        if (!Array.isArray(resp.result) || resp.result.length === 0) {
+        if (!Array.isArray(resp.result) || resp.result.length == 0) {
             throw new Error(resp.result ?? "下载失败")
         }
 
-        sourceCode = resp.result[0]['SourceCode'];
+        const result = resp.result[0];
 
-        if (sourceCode && /^{{1,2}/.test(sourceCode)) {
+        if (result.Proxy != "0") {
+            source.tag.push('代理合约')
+            source.implementation = result.Implementation
+        }
+
+        if (result.SourceCode == "") {
+            source.tag.push('未开源')
+            return source
+        }
+
+        source.open = true;
+        source.code = result.SourceCode;
+        source.abi = result.ABI;
+
+        if (source.code && /^{{1,2}/.test(source.code)) {
             let sources
-            if (/^{{2}/.test(sourceCode)) {
-                sourceCode = sourceCode.slice(1, sourceCode.length - 1)
-                const parse = JSON.parse(sourceCode);
-                sources = parse["sources"];
+            if (/^{{2}/.test(source.code)) {
+                source.code = source.code.slice(1, source.code.length - 1)
+                sources = JSON.parse(source.code)["sources"];
             } else {
-                sources = JSON.parse(sourceCode);
+                sources = JSON.parse(source.code);
             }
-            sourceCode = ""
+            source.code = ""
+
             const keys = Object.keys(sources)
             for (let i = (keys.length - 1); i >= 0; i--) {
-                sourceCode += sources[keys[i]]['content']
+                source.code += sources[keys[i]]['content'] + "\n\n"
             }
         }
 
-        return escape2Html(sourceCode);
-    }
-
-    const coreDao = async () => {
-        const resp = await request<any>({
-            host: "https://scan.coredao.org/api/chain/abi",
-            method: 'POST',
-            data: {
-                contractAddress: contract.address
-            }
-        })
-        if (resp.code !== "00000") {
-            throw new Error("获取源码失败")
-        }
-        const response = await fetch("https://scan.coredao.org" + resp.data.source[0].path)
-        if (response.status !== 200) {
-            throw new Error("获取源码失败")
-        }
-        return response.text()
+        source.code = escape2Html(source.code)
+        return source;
     }
 
     const load = async () => {
         try {
             setLoading(true)
-            let sourceCode = ""
-            if ("scan.coredao.org" == location.host) {
-                sourceCode = await coreDao()
-            } else {
-                sourceCode = await source()
+            let source: Source
+            source = await getSource()
+
+            if (contract.token) {
+                source.code += `
+/*
+${contract.token.symbol}
+${contract.address}${source.tag.length > 0 ? `(${source.tag.join(",")})` : ''}${source.implementation ? `\n${source.implementation}(真实合约)` : ''}
+池子 ${contract.pools && contract.pools.length > 0 ? `${contract.pools.map(t => t.symbol).join(" ")}` : ''}
+
+管理员：${contract.owner ?? ''}
+GAS评估：
+*/`
             }
 
-            if (contract.symbol != "") {
-                sourceCode = `
-${sourceCode}
-/*
-${contract.symbol}
-${contract.address}
-*/
-                `
+            if (!source.code) {
+                return message.error("未开源")
             }
+
             // 下载处理下载文件
             await sendToBackground<Download, boolean>({
                 name: "download",
                 body: {
                     name: `${contract.address}.sol`,
-                    body: sourceCode,
+                    body: source.code,
                     type: ".sol",
                 }
             })
+
             setError(undefined)
         } catch (e) {
             message.error(e.toString())

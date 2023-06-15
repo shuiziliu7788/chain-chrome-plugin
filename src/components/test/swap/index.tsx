@@ -1,21 +1,17 @@
-import {AutoComplete, Button, Card, Col, Form, InputNumber, Row, Space, Tooltip} from "antd";
+import {AutoComplete, Button, Card, Col, Form, InputNumber, Row, Space} from "antd";
 import React, {useContext, useEffect, useState} from "react";
-import {ConsumerProps, ExplorerContext} from "@/components";
+import {ConsumerProps, ExplorerContext, unique} from "@/components";
 import SelectToken from "./SelectToken";
 import {SwapOutlined} from "@ant-design/icons";
 import SelectAccount from "./SelectAccount";
 import SelectRouter from "./SelectRouter";
-import FeeView from "./FeeView";
-import {decode, encode, Swap, TestAddress} from "./utils";
+import FeeTable from "./FeeTable";
+import {decode, encode, TestAddress} from "./utils";
+import type {CallForm, TradeColumn} from "./typing";
 
 const Swap = () => {
-    const {
-        contract,
-        submitSimulation,
-        explorer
-    } = useContext<ConsumerProps>(ExplorerContext);
-
-    const [fee, setFee] = useState<Swap[]>([])
+    const {contract, submitSimulation,} = useContext<ConsumerProps>(ExplorerContext);
+    const [fee, setFee] = useState<TradeColumn[]>([])
     const [form] = Form.useForm()
     const [loading, setLoading] = useState(false);
     const [accounts, setAccounts] = useState<any[]>([
@@ -25,51 +21,43 @@ const Swap = () => {
         }
     ]);
 
-    const onFinish = async (values) => {
+    const onFinish = async (values: CallForm) => {
         setLoading(true)
 
         for (let i = 0; i < values.quantity ?? 1; i++) {
-            const swaps: Swap[] = [];
-
+            const swaps: TradeColumn[] = [];
             try {
                 const resp = await submitSimulation({
                     from: values.account,
-                    gas_limit: values.gas,
+                    gas: values.gas,
                     to: TestAddress,
                     gas_price: values.gasPrice,
                     input: encode(values),
                     save: true,
                     value: "0",
                 })
-                if (resp.transaction.error_message) {
-                    swaps.push({
-                        simulation: {
-                            fork_id: resp.simulation.fork_id,
-                            id: resp.simulation.id,
-                        },
-                        key: `${Math.random()}`,
-                        error: `${resp.transaction.error_info.error_message} form ${resp.transaction.error_info.address}`,
-                    })
-                    return
-                }
+
                 swaps.push(...decode(resp, values))
+
                 setAccounts((prevState: any[]) => {
-                    prevState = [
-                        ...swaps.map(swap => ({
-                            label: `${swap.recipient == TestAddress ? '测试合约' : `${swap.id}账户`}：${swap.tokenOut.amount}${swap.tokenOut.symbol}`,
-                            value: swap.recipient,
-                        })),
+                    const accounts = swaps.filter(swap => !!swap.account).map(swap => ({
+                        label: `${swap.account.account == TestAddress ? '测试合约' : `${swap.id}账户`}：${swap.account.balanceOut}${values.tokenOut.symbol}`,
+                        value: swap.account.account,
+                    }))
+                    return unique([
+                        ...accounts,
                         ...prevState
-                    ]
-                    const map = new Map()
-                    return prevState.filter((item) => !map.has(item['value']) && map.set(item['value'], true))
+                    ], 'value')
                 })
+
             } catch (e) {
                 swaps.push({
                     key: `${Math.random()}`,
                     error: e.toString(),
                 })
             }
+
+            console.log(swaps)
 
             setFee((fees) => {
                 return [
@@ -82,28 +70,21 @@ const Swap = () => {
         setLoading(false)
     }
 
-    useEffect(() => {
-        const tokenOut = contract.symbol ? {
-            address: contract.address,
-            symbol: contract.symbol,
-            decimals: contract.decimals
-        } : {}
-
-        const tokenIn = explorer.tokens.length > 0 ? explorer.tokens[0] : {}
-        let router = explorer.router.find(router => router.address == contract.router);
-
-        router = router ? router : explorer.router.length > 0 ? explorer.router[0] : {
-            address: contract.router,
-        }
-
+    const onReset = () => {
         form.setFieldsValue({
-            router: router,
+            quantity: 1,
+            count: 1,
+        })
+    }
+
+    useEffect(() => {
+        form.setFieldsValue({
+            router: contract.router,
             account: "0xBd770416a3345F91E4B34576cb804a576fa48EB1",
             recipient: TestAddress,
-            tokenOut,
-            tokenIn,
+            tokenOut: contract.token,
+            tokenIn: contract.pool,
         })
-
     }, [])
 
     return <Card className={'tool-card'}>
@@ -113,11 +94,12 @@ const Swap = () => {
             layout={'vertical'}
             onFinish={onFinish}
             initialValues={{
-                amountBuy: 0.1,
-                amountSell: 60,
-                amountTransfer: 40,
+                amountBuy: 0.05,
+                amountSell: 80,
+                amountTransfer: 100,
                 count: 1,
                 quantity: 1,
+                gas: 1000,
             }}
             scrollToFirstError={true}
         >
@@ -130,8 +112,12 @@ const Swap = () => {
 
             <SelectAccount
                 accounts={accounts}
-                onSelect={(value) => {
-                    form.setFieldValue("recipient", value)
+                onChange={(value) => {
+                    form.setFieldsValue({
+                        quantity: 1,
+                        count: 1,
+                        recipient: value,
+                    })
                 }}
             />
 
@@ -180,11 +166,10 @@ const Swap = () => {
                             min={0}
                             max={100}
                             addonBefore={'买'}
-                            addonAfter={<Tooltip title={'池子百分比'}>%</Tooltip>}
+                            addonAfter={'%'}
+                            onChange={onReset}
                         />
                     </Form.Item>
-
-
                     <Form.Item
                         rules={[{required: true, message: '请输入卖百分比'}]}
                         name={'amountSell'}
@@ -196,14 +181,14 @@ const Swap = () => {
                             min={0}
                             max={100}
                             addonBefore={'卖'}
-                            addonAfter={<Tooltip title={'余额百分比'}>%</Tooltip>}
+                            addonAfter={'%'}
+                            onChange={onReset}
                         />
                     </Form.Item>
 
                     <Form.Item
                         rules={[{required: true, message: '请输入转百分比'}]}
                         name={'amountTransfer'}
-                        tooltip={'sssssssssssss'}
                         noStyle
                     >
                         <InputNumber
@@ -212,7 +197,8 @@ const Swap = () => {
                             min={0}
                             max={100}
                             addonBefore={'转'}
-                            addonAfter={<Tooltip title={'余额百分比'}>%</Tooltip>}
+                            addonAfter={'%'}
+                            onChange={onReset}
                         />
                     </Form.Item>
                 </Space.Compact>
@@ -229,20 +215,21 @@ const Swap = () => {
                             options={[
                                 {
                                     label: '测试合约',
-                                    value: '0xbd770416a3345f91e4b34576cb804a576fa48eb1',
+                                    value: '0xBd770416a3345F91E4B34576cb804a576fa48EB1',
                                 },
                                 {
                                     label: '随机账号',
                                     value: '0x0000000000000000000000000000000000000001',
                                 }
                             ]}
+                            onChange={onReset}
                         />
                     </Form.Item>
                 </Space.Compact>
             </Form.Item>
+
             <Form.Item>
                 <Row gutter={[12, 12]}>
-
                     <Col span={15}>
                         <Space.Compact block>
                             <Form.Item name={'quantity'} noStyle>
@@ -252,6 +239,7 @@ const Swap = () => {
                                     max={5}
                                     addonBefore={'购买'}
                                     addonAfter={'次，每'}
+
                                 />
                             </Form.Item>
                             <Form.Item name={'count'} noStyle>
@@ -270,7 +258,8 @@ const Swap = () => {
                     </Col>
                 </Row>
             </Form.Item>
-            <FeeView
+
+            <FeeTable
                 dataSource={fee}
             />
         </Form>

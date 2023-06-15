@@ -16,6 +16,10 @@ const Unit = () => {
     useEffect(() => {
         try {
             setBnb(FormatNumber(amount, digits))
+        } catch (e) {
+            console.error(e)
+        }
+        try {
             setWei(FormatNumber(amount, -digits))
         } catch (e) {
             console.error(e)
@@ -23,8 +27,10 @@ const Unit = () => {
     }, [digits, amount])
 
     useEffect(() => {
-        setDigits(contract.decimals)
-    }, [contract.decimals])
+        if (contract.token) {
+            setDigits(contract.token.decimals)
+        }
+    }, [contract.token])
 
 
     return <>

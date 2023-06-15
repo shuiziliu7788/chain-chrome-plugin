@@ -1,9 +1,10 @@
 import {App, Button, Select, Space, Tooltip} from "antd";
-import {DeleteOutlined, PlusCircleOutlined, UndoOutlined} from "@ant-design/icons";
+import {PlusCircleOutlined, UndoOutlined} from "@ant-design/icons";
 import React from "react";
 import {ConsumerProps, ExplorerContext} from "@/components";
 import dayjs from "dayjs";
 import {createStyles} from "antd-style";
+import DeleteIcon from "@/components/test/node/DeleteIcon";
 
 const {Option} = Select
 
@@ -30,7 +31,6 @@ const Node = () => {
         forks,
         setCurrentFork,
         forkLoading,
-        removeFork,
         fetchForks,
         createFork,
         createLoading,
@@ -38,6 +38,7 @@ const Node = () => {
     } = React.useContext<ConsumerProps>(ExplorerContext);
 
     const {styles} = useStyle();
+
     return <Space.Compact className={'aflex'} block>
         <Select
             value={current_fork ? current_fork.id : undefined}
@@ -59,16 +60,7 @@ const Node = () => {
                     {...item}
                 >
                     {item.name}
-                    <DeleteOutlined
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            removeFork(item.id).then(async () => {
-                                await message.success("删除成功");
-                                return fetchForks();
-                            });
-                        }}
-                        style={{display: 'none'}}
-                        className={'remove'}/>
+                    <DeleteIcon id={item.id}/>
                 </Option>)
             }
         </Select>
@@ -88,7 +80,7 @@ const Node = () => {
                 onClick={() => {
                     createFork({
                         description: contract.address ?? `0x`,
-                        name: `${contract.symbol ?? 'TEST'}-${dayjs().format("MM月DD HH:mm")}-链:${contract.chain_id}`,
+                        name: `${contract.token ? contract.token.symbol : 'TEST'}-${dayjs().format("MM月DD HH:mm")}-链:${contract.chain_id}`,
                         network_id: contract.chain_id
                     }).catch(e => {
                         return message.error(e)

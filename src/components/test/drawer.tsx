@@ -23,7 +23,6 @@ export const ToolDrawer = () => {
         })
     }, [])
 
-
     return <ExplorerProvider
         {...hook}
     >
@@ -68,7 +67,7 @@ export const ToolDrawer = () => {
                         children: <Call rpc={hook.explorer.rpc}/>
                     },
                     {
-                        label: "测试",
+                        label: "调试",
                         key: "test",
                         children: <Tender/>,
                     },

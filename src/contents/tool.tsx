@@ -22,7 +22,7 @@ export const getStyle: PlasmoGetStyle = () => {
 export const render: PlasmoRender<any> = async ({anchor, createRootContainer}: any) => {
     try {
         const explorer = await (new Storage()).get<Explorer>(location.host)
-        if (!explorer) {
+        if (!explorer || !explorer.enable) {
             return
         }
         const rootContainer = await createRootContainer(anchor)

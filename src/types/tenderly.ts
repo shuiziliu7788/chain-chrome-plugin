@@ -29,7 +29,7 @@ export interface ForkRequest {
 export interface SimulationRequest {
     root?: string,
     from: string
-    gas_limit: string | number
+    gas: string | number
     gas_price: string | number
     input: string
     to?: string
@@ -38,7 +38,6 @@ export interface SimulationRequest {
     skip_fork_head_update?: boolean
     network_id?: string
     generate_access_list?: boolean
-    block_header?: boolean
     block_number?: boolean
     transaction_index?: string
     state_objects?: {
@@ -46,5 +45,9 @@ export interface SimulationRequest {
             balance?: string,
             [key: string]: string
         }
+    },
+    block_header?: {
+        number?: string
+        timestamp?: string
     }
 }

@@ -28,9 +28,10 @@ const Send = () => {
         setLoading(true)
         try {
             const fields = form.getFieldsValue();
+
             const resp = await submitSimulation({
                 from: fields.from,
-                gas_limit: fields.gas,
+                gas: fields.gas,
                 gas_price: fields.gasPrice,
                 input: encode(fields),
                 save: true,
@@ -38,6 +39,7 @@ const Send = () => {
                 value: fields.value,
                 generate_access_list: true,
                 skip_fork_head_update: false,
+                block_header:fields.block_header,
             })
             setResponse(resp)
             if (resp.transaction.error_message) {
@@ -63,7 +65,7 @@ const Send = () => {
             autoComplete="off"
             onFinish={onSend}
         >
-            <Root/>
+            <Root rewriteHeader/>
             <Name
                 debug={true}
                 loading={loading}

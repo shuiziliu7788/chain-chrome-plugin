@@ -1,118 +1,117 @@
 {
   "arbiscan.io": {
-    "rpc": "https://rpc.ankr.com/arbitrum",
+    "enable": true,
     "router": [],
     "tokens": [
       {
-        "address": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+        "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
         "symbol": "USDT",
         "decimals": 6,
         "name": "Tether USD",
         "totalSupply": "426169382410167"
       },
       {
-        "address": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+        "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
         "symbol": "WETH",
         "decimals": 18,
         "name": "Wrapped Ether",
         "totalSupply": "315098875589085279070785"
       }
-    ]
+    ],
+    "host": "arbiscan.io",
+    "rpc": "https://rpc.ankr.com/arbitrum",
+    "developer_host": "https://api.arbiscan.io/api"
   },
   "bscscan.com": {
-    "rpc": "https://rpc.ankr.com/bsc",
-    "secret_key": "BMZSWCGU947EMCBTSIIPDIKFGC7Z1QAG7P",
     "enable": true,
     "router": [
       {
-        "name": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
-        "address": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+        "name": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+        "address": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
         "weth": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
         "version": 2
       }
     ],
     "tokens": [
       {
-        "address": "0x55d398326f99059ff775485246999027b3197955",
-        "symbol": "USDT",
-        "decimals": 18,
-        "name": "Tether USD",
-        "totalSupply": "3379997906401637314353418735"
-      },
-      {
         "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
         "symbol": "WBNB",
         "decimals": 18,
         "name": "Wrapped BNB",
         "totalSupply": "3174449625966827931564238"
+      },
+      {
+        "address": "0x55d398326f99059fF775485246999027B3197955",
+        "symbol": "USDT",
+        "decimals": 18,
+        "name": "Tether USD",
+        "totalSupply": "3379997906401637314353418691"
       }
-    ]
+    ],
+    "host": "bscscan.com",
+    "rpc": "https://rpc.ankr.com/bsc",
+    "developer_host": "https://api.bscscan.com/api",
+    "secret_key": "BMZSWCGU947EMCBTSIIPDIKFGC7Z1QAG7P"
   },
   "decompile_network": "http://127.0.0.1:5567",
-  "dict": {
-    "owner": [
-      {
-        "id": "0x8da5cb5b",
-        "label": "owner()",
-        "value": "owner()"
-      }
-    ],
-    "pair": [
-      {
-        "id": "0x452ed4f1",
-        "label": "lpPair()",
-        "value": "lpPair()"
-      },
-      {
-        "id": "0x4188bf5a",
-        "label": "_mainPair()",
-        "value": "_mainPair()"
-      },
-      {
-        "id": "0x49bd5a5e",
-        "label": "uniswapV2Pair()",
-        "value": "uniswapV2Pair()"
-      },
-      {
-        "id": "0xc816841b",
-        "label": "uniswapPair()",
-        "value": "uniswapPair()"
-      },
-      {
-        "id": "0x632a6a35",
-        "label": "pancakeV2Pair()",
-        "value": "pancakeV2Pair()"
-      },
-      {
-        "id": "0xa8aa1b31",
-        "label": "pair()",
-        "value": "pair()"
-      }
-    ],
-    "router": [
-      {
-        "id": "0xc31c9c07",
-        "label": "swapRouter()",
-        "value": "swapRouter()"
-      },
-      {
-        "id": "0x1694505e",
-        "label": "uniswapV2Router()",
-        "value": "uniswapV2Router()"
-      },
-      {
-        "id": "0x206c17bb",
-        "label": "_swapRouter()",
-        "value": "_swapRouter()"
-      }
-    ]
-  },
+  "dict": [
+    {
+      "value": "0x8da5cb5b",
+      "label": "owner",
+      "type": "owner"
+    },
+    {
+      "value": "0x452ed4f1",
+      "label": "lpPair",
+      "type": "pair"
+    },
+    {
+      "value": "0x4188bf5a",
+      "label": "_mainPair",
+      "type": "pair"
+    },
+    {
+      "value": "0x49bd5a5e",
+      "label": "uniswapV2Pair",
+      "type": "pair"
+    },
+    {
+      "value": "0xc816841b",
+      "label": "uniswapPair",
+      "type": "pair"
+    },
+    {
+      "value": "0x632a6a35",
+      "label": "pancakeV2Pair",
+      "type": "pair"
+    },
+    {
+      "value": "0xa8aa1b31",
+      "label": "pair",
+      "type": "pair"
+    },
+    {
+      "value": "0xc31c9c07",
+      "label": "swapRouter",
+      "type": "router"
+    },
+    {
+      "value": "0x1694505e",
+      "label": "uniswapV2Router",
+      "type": "router"
+    },
+    {
+      "value": "0x206c17bb",
+      "label": "_swapRouter",
+      "type": "router"
+    }
+  ],
   "etherscan.io": {
-    "rpc": "https://rpc.ankr.com/eth",
+    "enable": true,
     "router": [],
     "tokens": [
       {
-        "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "symbol": "USDT",
         "decimals": 6,
         "name": "Tether USD",
@@ -125,12 +124,18 @@
         "name": "Wrapped Ether",
         "totalSupply": "3408749181362230991928111"
       }
-    ]
+    ],
+    "host": "etherscan.io",
+    "rpc": "https://rpc.ankr.com/eth",
+    "developer_host": "https://api.etherscan.io/api"
   },
   "fonscan.io": {
-    "rpc": "https://fsc-dataseed1.fonscan.io",
+    "enable": true,
     "router": [],
-    "tokens": []
+    "tokens": [],
+    "host": "fonscan.io",
+    "rpc": "https://fsc-dataseed1.fonscan.io",
+    "developer_host": "https://fonscan.io/api"
   },
   "methods": [
     {
@@ -194,33 +199,6 @@
       "value": "one((address,address,address,uint256,uint256,uint256))"
     }
   ],
-  "neteork": {
-    "bscscan.com": {
-      "rpc": "https://rpc.ankr.com/bsc",
-      "router": [],
-      "tokens": []
-    },
-    "etherscan.io": {
-      "rpc": "https://rpc.ankr.com/eth",
-      "router": [],
-      "tokens": []
-    },
-    "arbiscan.io": {
-      "rpc": "https://rpc.ankr.com/arbitrum",
-      "router": [],
-      "tokens": []
-    },
-    "fonscan.io": {
-      "rpc": "https://fsc-dataseed1.fonscan.io",
-      "router": [],
-      "tokens": []
-    },
-    "scan.coredao.org": {
-      "rpc": "https://rpc.coredao.org/",
-      "router": [],
-      "tokens": []
-    }
-  },
   "scan.coredao.org": {
     "rpc": "https://rpc.coredao.org/",
     "router": [],

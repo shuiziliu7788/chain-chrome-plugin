@@ -1,4 +1,4 @@
-import {AbiCoder, concat, FunctionFragment} from "ethers";
+import {AbiCoder, concat, FunctionFragment, getUint} from "ethers";
 import {signatureWithDataRegExp} from "./regexp";
 import dayjs from "dayjs";
 
@@ -124,19 +124,24 @@ export const encode = (f: Func): string => {
     return data
 }
 
-export const autoDecode = (hash: string): { type: string, value: any } => {
-    if (!hash || hash === "" || hash === "0x" || hash.match(/^0x[a-fA-F0-9][a-fA-F0-9]{7}$/)) {
-        return {type: "bytes32", value: hash}
-    } else if (hash.match(/^0x0{24,25}[a-fA-F1-9][a-fA-F0-9]{38,39}$/)) {
-        const result = abiCoder.decode(['address'], hash);
+export const autoDecode = (hex: string): { type: string, value: any } => {
+    if (!hex || hex === "" || hex === "0x" || hex.match(/^0x[a-fA-F0-9][a-fA-F0-9]{7}$/)) {
+        return {type: "bytes32", value: hex}
+    } else if (hex.match(/^0x0{24,25}[a-fA-F1-9][a-fA-F0-9]{38,39}$/)) {
+        const result = abiCoder.decode(['address'], hex);
         return {type: "address", value: result[0]}
     }
-    const result = abiCoder.decode(["uint"], hash)
-    const num = result[0]
-    if (num < 9999999999 && num > 1000000000) {
-        return {type: "uint32", value: dayjs(num.toNumber() * 1000).format("YYYY-MM-DD HH:mm:ss")}
+
+    const result: bigint = getUint(hex)
+
+    if (result < 9999999999n && result > 1000000000n) {
+        return {type: "uint32", value: dayjs(Number(result) * 1000).format("YYYY-MM-DD HH:mm:ss")}
     }
-    return {type: "uint256", value: result[0]}
+
+    return {
+        type: "uint256",
+        value: result
+    }
 }
 
 export const decode = (hex: string, types?: ParamType[]): ParamType[] => {

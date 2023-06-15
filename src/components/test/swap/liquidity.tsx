@@ -11,14 +11,17 @@ import {TestAddress} from "./utils";
 import {TestSwapIface} from "@/constant";
 import HashValue from "@/components/value";
 import {ParamType} from "@/utils/function";
+import {FormatNumber} from "@/utils/number";
 
 const Liquidity = () => {
     const {message} = App.useApp();
     const [form] = Form.useForm()
     const tokenInSymbol = Form.useWatch(['tokenIn', 'symbol'], form)
     const tokenOutSymbol = Form.useWatch(['tokenOut', 'symbol'], form)
-    const account = Form.useWatch('account', form)
     const tokenOutAddress = Form.useWatch(['tokenOut', 'address'], form)
+    const tokenOutDecimals = Form.useWatch<number>(['tokenOut', 'decimals'], form)
+    const account = Form.useWatch('account', form)
+
     const [max, setMax] = useState<bigint>(0n)
     const [loading, setLoading] = useState<boolean>(false)
     const [err, setErr] = useState<string>()
@@ -89,29 +92,26 @@ const Liquidity = () => {
     }
 
     useEffect(() => {
-        const tokenOut = contract.symbol ? {
-            address: contract.address,
-            symbol: contract.symbol,
-            decimals: contract.decimals
-        } : undefined
-        const tokenIn = explorer.tokens.length > 0 ? explorer.tokens[0] : undefined
-        let router = explorer.router.find(router => router.address == contract.router);
-        router = router ? router : explorer.router.length > 0 ? explorer.router[0] : {
-            address: contract.router,
-        }
         form.setFieldsValue({
-            router: router,
-            tokenOut,
-            tokenIn,
+            account: contract.creator,
+            router: contract.router,
+            tokenOut: contract.token,
+            tokenIn: contract.pool,
         })
-        if (contract.owner) {
-            setAccounts([
-                {
-                    label: "创建者",
-                    value: contract.owner,
-                }
-            ])
+        let accounts: any[] = []
+        if (contract.creator) {
+            accounts.push({
+                label: "创建者",
+                value: contract.creator,
+            })
         }
+        if (contract.creator != contract.owner) {
+            accounts.push({
+                label: "管路员",
+                value: contract.owner,
+            })
+        }
+        setAccounts(accounts)
     }, [])
 
     useEffect(() => {
@@ -122,10 +122,8 @@ const Liquidity = () => {
             to: tokenOutAddress,
             data: concat(["0x70a08231", zeroPadValue(toBeHex(account), 32)]),
         }).then(resp => {
-            console.log(getUint(resp))
             setMax(getUint(resp))
         })
-
     }, [account, tokenOutAddress])
 
     return <Card className={'tool-card'}>
@@ -146,7 +144,7 @@ const Liquidity = () => {
 
             <SelectAccount
                 accounts={accounts}
-                onSelect={(value) => {
+                onChange={(value) => {
                     form.setFieldValue("recipient", value)
                 }}
             />
@@ -182,44 +180,44 @@ const Liquidity = () => {
                 </Space.Compact>
             </Form.Item>
 
-            <Form.Item>
-                <Space.Compact block>
-                    <Button disabled className={'w80'}>{tokenInSymbol ?? '未选择'}</Button>
-                    <Form.Item
-                        rules={[{required: true, message: `请输入${tokenInSymbol}数量`}]}
-                        name={'amountIn'}
-                        noStyle
-                    >
-                        <Input
-                            style={{width: '100%'}}
-                            placeholder={`请输入${tokenInSymbol}数量,自动兑换`}
-                        />
-                    </Form.Item>
-                </Space.Compact>
+
+            <Form.Item
+                className={'token-label'}
+                rules={[{required: true, message: `请输入${tokenInSymbol ?? ''}数量`}]}
+                name={'amountIn'}
+                label={<>
+                    <div>{tokenInSymbol ?? '未选择'}</div>
+                    <div>合约自动兑换</div>
+                </>}
+            >
+                <Input
+                    style={{width: '100%'}}
+                    placeholder={`请输入${tokenOutSymbol ?? ''}数量`}
+
+                />
             </Form.Item>
 
-            <Form.Item>
-                <Space.Compact block>
-                    <Button disabled className={'w80'}>{tokenOutSymbol ?? '未选择'}</Button>
-                    <Form.Item
-                        rules={[{required: true, message: `请输入${tokenOutSymbol}数量`}]}
-                        name={'amountOut'}
-                        noStyle
+            <Form.Item
+                className={'token-label'}
+                rules={[{required: true, message: `请输入${tokenOutSymbol ?? ''}数量`}]}
+                name={'amountOut'}
+                label={<>
+                    <div>{tokenOutSymbol ?? '未选择'}</div>
+                    <div>余额：{`${FormatNumber(max, tokenOutDecimals ?? 18)}`}</div>
+                </>}
+            >
+                <Input
+                    style={{width: '100%'}}
+                    placeholder={`请输入${tokenOutSymbol ?? ''}数量`}
+                    suffix={<a
+                        onClick={() => {
+                            const decimals = form.getFieldValue(['tokenOut', 'decimals']);
+                            form.setFieldValue("amountOut", formatUnits(max, decimals ?? 18))
+                        }}
                     >
-                        <Input
-                            style={{width: '100%'}}
-                            placeholder={`请输入${tokenOutSymbol}数量`}
-                            suffix={<a
-                                onClick={() => {
-                                    const decimals = form.getFieldValue(['tokenOut', 'decimals']);
-                                    form.setFieldValue("amountOut", formatUnits(max, decimals ?? 18))
-                                }}
-                            >
-                                最大
-                            </a>}
-                        />
-                    </Form.Item>
-                </Space.Compact>
+                        最大
+                    </a>}
+                />
             </Form.Item>
 
             <Form.Item>

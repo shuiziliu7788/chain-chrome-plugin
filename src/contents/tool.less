@@ -69,6 +69,82 @@
 }
 
 
+.trade {
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #8c96a5;
+    margin-bottom: 4px;
+  }
+
+  .title {
+    color: #8c96a5;
+    font-weight: 700 !important;
+  }
+
+  .fees {
+    font-size: 10px;
+  }
+
+  .events {
+    height: 422px;
+    overflow: auto;
+  }
+
+  .token {
+    line-height: 18px;
+
+    .amount {
+      color: #c0d3df;
+    }
+
+    .unit {
+      color: #1677ff;
+      margin-left: 2px;
+    }
+
+    .path {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .account {
+        width: 50%;
+        display: flex;
+        justify-content: start;
+        align-items: center;
+
+        .direction {
+          color: #8c96a5;
+        }
+
+        .address {
+          width: calc(100% - 20px);
+          margin-left: 4px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          color: #1677ff
+        }
+      }
+    }
+  }
+}
+
+.token-label {
+  label {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+
+    &::before {
+      display: none !important;
+    }
+  }
+}
+
+
 * {
   &::-webkit-scrollbar {
     width: 3px;

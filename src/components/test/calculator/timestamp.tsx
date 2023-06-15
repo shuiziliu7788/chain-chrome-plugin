@@ -1,31 +1,18 @@
 import {Button, Form, Input, Space, Typography} from "antd";
 import {CheckOutlined, SnippetsOutlined, UndoOutlined} from "@ant-design/icons";
 import {useEffect, useState} from "react";
+import dayjs from "dayjs";
 
 const {Paragraph} = Typography
 
-const getNow = () => {
-    return parseInt(String(new Date().getTime() / 1000))
-}
 
-
-const getData = (now) => {
-    let date = new Date(now * 1000);
-    let YY = date.getFullYear() + "-";
-    let MM = (date.getMonth() + 1 < 10 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1) + "-";
-    let DD = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
-    let hh = (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) + ":";
-    let mm = (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()) + ":";
-    let ss = date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
-    return YY + MM + DD + " " + hh + mm + ss;
-}
 
 const Timestamp = () => {
-    const [now, setNow] = useState<number>(getNow());
+    const [now, setNow] = useState<number>(dayjs().unix());
     const [date, setDate] = useState(undefined);
 
     useEffect(() => {
-        setDate(getData(now))
+        setDate(dayjs(Number(now)*1000).format("YYYY-MM-DD HH:mm:ss"))
     }, [now])
 
 
@@ -44,9 +31,7 @@ const Timestamp = () => {
                     }}
                 />
                 <Button
-                    onClick={() => {
-                        setNow(getNow())
-                    }}
+                    onClick={() => setNow(dayjs().unix())}
                     icon={<UndoOutlined/>}/>
             </Space.Compact>
         </Form.Item>

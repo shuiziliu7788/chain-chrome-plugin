@@ -21,5 +21,4 @@ export const multiCallAbi: string[] = [
     'function tryBlockAndAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) payable returns (uint256 blockNumber, bytes32 blockHash, tuple(bool success, bytes returnData)[] returnData)',
 ];
 
-
 export const multiCallIface = new Interface(multiCallAbi);

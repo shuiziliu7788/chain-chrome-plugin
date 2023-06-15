@@ -1,11 +1,10 @@
-import {CollectForm, DecompileForm, DictForm, Layout, PageForm, TenderlyForm} from "@/components";
+import {CollectForm, DecompileForm, Layout, PageForm, TenderlyForm} from "@/components";
 import {Card, Tabs} from "antd";
 import "./index.less"
 import {useTabFlex} from "@/components/style";
 
 const Popup = () => {
     const {styles} = useTabFlex();
-
 
     return <Layout>
         <Card
@@ -16,7 +15,6 @@ const Popup = () => {
                 overflowX: 'hidden',
                 padding: 0,
             }}
-            extra={<a href={''} target={'_blank'}>aa</a>}
         >
             <Tabs
                 className={styles.flex}
@@ -32,23 +30,18 @@ const Popup = () => {
                     },
                     {
                         key: 'compile',
-                        label: '编译',
+                        label: '编译网络',
                         children: <DecompileForm/>
                     },
                     {
                         key: 'tenderly',
-                        label: '测试',
+                        label: '测试账号',
                         children: <TenderlyForm/>,
                     },
                     {
-                        key: 'collect',
-                        label: '方法',
+                        key: 'collect_form',
+                        label: '提示方法',
                         children: <CollectForm/>,
-                    },
-                    {
-                        key: 'dict',
-                        label: '词典',
-                        children: <DictForm/>,
                     },
                 ]}
             />

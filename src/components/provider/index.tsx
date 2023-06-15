@@ -12,7 +12,7 @@ import type {
 } from "./typing";
 
 export const ExplorerContext = React.createContext<ConsumerProps>({
-    setExplorer(explorer: Explorer):  Promise<any> {
+    setExplorer(explorer: Explorer): Promise<any> {
         throw new Error("Function not implemented.");
     },
     explorer: undefined,
@@ -72,5 +72,7 @@ export const ExplorerProvider: React.FC<ProviderProps> & {} = (props) => {
 };
 
 export * from "./typing"
+
+export * from "./utils"
 
 export default ExplorerProvider

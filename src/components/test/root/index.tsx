@@ -12,7 +12,7 @@ interface RootProps {
         label: string
         value: string
     }[]
-
+    rewriteHeader?: boolean
 }
 
 const Root = (props: RootProps) => {
@@ -88,6 +88,29 @@ const Root = (props: RootProps) => {
                         addonBefore={'GAS'}/>
                 </Form.Item>
             </Col>
+            {
+                props.rewriteHeader && <>
+                    <Col span={12}>
+                        <Form.Item name={['block_header', 'number']}>
+                            <Input
+                                className={'addon'}
+                                placeholder="区块"
+                                allowClear
+                                addonBefore={'区块'}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                        <Form.Item name={['block_header', 'timestamp']}>
+                            <Input
+                                className={'addon'}
+                                placeholder="时间戳"
+                                allowClear
+                                addonBefore={'时间戳'}/>
+                        </Form.Item>
+                    </Col>
+                </>
+            }
         </Row>
     </>
 }

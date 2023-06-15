@@ -8,10 +8,10 @@ interface SelectAccountProps {
         disabled?: boolean;
         [name: string]: any;
     }[]
-    onSelect?: (value: string) => void
+    onChange?: (value: string) => void
 }
 
-const SelectAccount = ({accounts, onSelect}: SelectAccountProps) => {
+const SelectAccount = ({accounts, onChange}: SelectAccountProps) => {
     const [more, setMore] = useState(false)
 
     return <>
@@ -24,7 +24,7 @@ const SelectAccount = ({accounts, onSelect}: SelectAccountProps) => {
                         allowClear
                         placeholder="请输入钱包"
                         options={accounts}
-                        onSelect={onSelect}
+                        onChange={onChange}
                     />
                 </Form.Item>
                 <Tooltip title={'更多参数'}>
@@ -49,6 +49,7 @@ const SelectAccount = ({accounts, onSelect}: SelectAccountProps) => {
                     />
                 </Form.Item>
             </Col>
+
             <Col span={12}>
                 <Form.Item name={'gas'}>
                     <Input
@@ -57,6 +58,26 @@ const SelectAccount = ({accounts, onSelect}: SelectAccountProps) => {
                         placeholder="燃料上限"
                         allowClear
                         addonBefore={'GAS'}/>
+                </Form.Item>
+            </Col>
+
+            <Col span={12}>
+                <Form.Item name={['block_header', 'number']}>
+                    <Input
+                        className={'addon'}
+                        placeholder="请输入覆盖区块"
+                        allowClear
+                        addonBefore={'区块'}/>
+                </Form.Item>
+            </Col>
+
+            <Col span={12}>
+                <Form.Item name={['block_header', 'timestamp']}>
+                    <Input
+                        className={'addon'}
+                        placeholder="请输入覆盖时间"
+                        allowClear
+                        addonBefore={'时间戳'}/>
                 </Form.Item>
             </Col>
         </Row>

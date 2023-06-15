@@ -1,7 +1,6 @@
-import {Button, Input, Select, Space} from "antd";
-import {getRouter} from "./utils";
-import React, {useContext, useEffect} from "react";
-import {ConsumerProps, ExplorerContext, Router} from "@/components";
+import {Button, Select, Space} from "antd";
+import React, {useContext} from "react";
+import {checkAddress, ConsumerProps, ExplorerContext, getRouterInfo, Router} from "@/components";
 
 
 interface SelectRouter {
@@ -17,32 +16,19 @@ const SelectRouter = ({value, onChange}: SelectRouter) => {
             return
         }
         try {
-            const regExp = new RegExp(address, 'ig');
-            const index = explorer.router.findIndex((t) => {
-                return regExp.test(t.address)
-            })
-            if (index >= 0) {
+            address = checkAddress(address)
+            if (explorer.router.findIndex(t => t.address == address) >= 0) {
                 return
             }
+            const router = await getRouterInfo(explorer.rpc, address)
             await setExplorer({
                 ...explorer,
-                router: [
-                    await getRouter(explorer.rpc, address),
-                    ...explorer.router
-                ].slice(0, 20)
+                router: [router, ...explorer.router].slice(0, 5)
             })
         } catch (e) {
             console.error(e)
         }
     }
-
-    useEffect(() => {
-        if (value && value.version == undefined) {
-            onSearch(value.address).catch(r => {
-                console.log(r)
-            })
-        }
-    }, [value])
 
     return <Space.Compact className={'flex'} block>
         <Button disabled className={'w80'}>路由</Button>

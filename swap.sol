@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-interface Router {
+interface IRouter {
     function factory() external pure returns (address);
 
     function WETH() external pure returns (address);
@@ -9,6 +9,20 @@ interface Router {
     function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
 
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
+}
+
+interface IPair {
+    function token0() external view returns (address);
+
+    function token1() external view returns (address);
+
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+
+    function mint(address to) external returns (uint liquidity);
+
+    function totalSupply() external view returns (uint);
 }
 
 interface BEP20 {
@@ -25,18 +39,9 @@ interface BEP20 {
     function transfer(address to, uint value) external returns (bool);
 
     function transferFrom(address from, address to, uint value) external returns (bool);
+}
 
-    function factory() external view returns (address);
-
-    function token0() external view returns (address);
-
-    function token1() external view returns (address);
-
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-
-    function mint(address to) external returns (uint liquidity);
+interface IWETH {
 
     function deposit() external payable;
 
@@ -64,7 +69,6 @@ contract TestSwap {
     uint256 internal id = 0;
     uint256 internal lastNumber = 0;
     uint256 internal index = 0;
-    address[] internal accounts;
     address internal _this;
 
     enum State {
@@ -127,11 +131,9 @@ contract TestSwap {
         TradeInfo sell;
         TradeInfo transfer;
         Account account;
-        uint256 blockNumber;
-        uint256 blockTimestamp;
     }
 
-    modifier theSwap() {
+    modifier autoIncrement() {
         if (block.number > lastNumber) {
             lastNumber = block.number;
             index = 0;
@@ -141,15 +143,28 @@ contract TestSwap {
         _;
     }
 
+    IRouter internal router;
+    IWETH internal weth;
+    IFactory internal factory;
+
     modifier automated(address router, address token) {
+        router = IRouter(router);
+        factory = IFactory(router.factory());
+        weth = IWETH(router.WETH()());
+
         if (address(this).balance > 0) {
             BEP20 WETH = BEP20(Router(router).WETH());
-            WETH.deposit{value: _this.balance}();
+            WETH.deposit {value : _this.balance}();
             if (token != address(WETH) && WETH.balanceOf(_this) > 0) {
                 try this.swapV2(router, address(WETH), token, address(this), address(this), WETH.balanceOf(_this), 0) {} catch {}
             }
         }
+        
         _;
+
+        delete router;
+        delete weth;
+        delete factory;
     }
 
     constructor() payable {
@@ -217,23 +232,21 @@ contract TestSwap {
         }
         _transfer(call.tokenIn, address(this), pair, call.amountIn, false);
         _transfer(call.tokenOut, tx.origin, pair, call.amountOut, false);
-        liquidity =  BEP20(pair).mint(address(this));
-        return (pair,liquidity);
+        liquidity = BEP20(pair).mint(address(this));
+        return (pair, liquidity);
     }
 
 
     function one(TradeCall calldata call)
     public
     payable
-    theSwap
+    autoIncrement
     automated(call.router, call.tokenIn)
     returns
     (TradeResult memory result)
     {
         result.id = id;
         result.index = index;
-        result.blockNumber = block.number;
-        result.blockTimestamp = block.timestamp;
         address recipient = call.recipient == address(1) ? _killAddress(call.tokenIn, call.tokenOut) : call.recipient;
         BEP20 IN = BEP20(call.tokenIn);
         BEP20 OUT = BEP20(call.tokenOut);
@@ -375,14 +388,14 @@ contract TestSwap {
             info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
         }
 
-        unchecked {
+    unchecked {
         // 实际支付的数量
-            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
         // 自动保留的数量
-            info.reserveAmount = value - info.tradeAmount;
+        info.reserveAmount = value - info.tradeAmount;
         // 手续费
-            info.fee = _fee(info.recipientAmount, info.tradeAmount);
-        }
+        info.fee = _fee(info.recipientAmount, info.tradeAmount);
+    }
 
         return info;
     }
@@ -409,12 +422,12 @@ contract TestSwap {
         info.formAfterBalance = TOKEN.balanceOf(pair);
         info.recipientAfterBalance = TOKEN.balanceOf(to);
 
-        unchecked {
-            info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
-            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
-            info.reserveAmount = info.transferAmount - info.tradeAmount;
-            info.fee = _fee(info.recipientAmount, info.tradeAmount);
-        }
+    unchecked {
+        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+        info.reserveAmount = info.transferAmount - info.tradeAmount;
+        info.fee = _fee(info.recipientAmount, info.tradeAmount);
+    }
 
         return info;
     }
@@ -447,7 +460,6 @@ contract TestSwap {
     {
         Kill kill = new Kill(token0, token1);
         kill.kill();
-        accounts.push(address(kill));
         return address(kill);
     }
 

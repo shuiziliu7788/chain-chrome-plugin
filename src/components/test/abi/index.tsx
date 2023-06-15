@@ -13,19 +13,23 @@ export const ABI = () => {
         try {
             let fra: Func = generate(e.target.value);
             let inputs = fra.inputs
-            if (inputs.length > 0) {
-                const defaultValue = abiCoder.getDefaultValue(fra.inputs.map(item => item.type));
-                for (let i = 0; i < inputs.length; i++) {
-                    if (inputs[i].baseType == "array" || inputs[i].baseType == "tuple") {
-                        inputs[i].value = JSON.stringify(defaultValue[i])
-                    } else {
-                        inputs[i].value = defaultValue[i]
+            try {
+                if (inputs.length > 0) {
+                    const defaultValue = abiCoder.getDefaultValue(fra.inputs.map(item => item.type));
+                    for (let i = 0; i < inputs.length; i++) {
+                        if (inputs[i].baseType == "array" || inputs[i].baseType == "tuple") {
+                            inputs[i].value = JSON.stringify(defaultValue[i])
+                        } else {
+                            inputs[i].value = defaultValue[i]
+                        }
                     }
                 }
+                form.setFieldValue("inputs", inputs)
+                fra.inputs = inputs;
+                fra.input = encode(fra);
+            } catch (e) {
+                console.error(e)
             }
-            form.setFieldValue("inputs", inputs)
-            fra.inputs = inputs;
-            fra.input = encode(fra);
             setFragment(fra)
         } catch (e) {
             setFragment({

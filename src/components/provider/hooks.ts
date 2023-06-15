@@ -1,18 +1,21 @@
 import {useEffect, useState} from "react";
-import {address} from "@/utils/regexp";
 import {useStorage} from "@plasmohq/storage/dist/hook";
 import type {Account, Fork, ForkRequest, SimulationRequest} from "@/types/tenderly";
-import type {ConsumerProps, Contract, Explorer, Method} from "./typing";
+import type {ConsumerProps, Contract, Explorer, Method, Router,} from "./typing";
 import type {Request} from "@/background/messages/proxy";
 import request from "@/utils/request";
 import {TestSwapCode} from "@/constant";
-import {getCreationTransaction, info} from "./utils";
+import {getContractInfo, getCreationTransaction, getPageAddress, getRouterInfo, unique} from "./utils";
+import {parseUnits} from "ethers";
 
 export type Hooks = () => ConsumerProps
 
-const zeroAddress = "0x0000000000000000000000000000000000000000"
+const zeroAddress: string = "0x0000000000000000000000000000000000000000"
+
+const balance = parseUnits('10000000', 20)
 
 const useHooks: Hooks = () => {
+    const currentAddress = getPageAddress()
     const [explorer, setExplorer] = useStorage<Explorer>(location.host, {
         enable: false,
         secret_key: undefined,
@@ -23,19 +26,19 @@ const useHooks: Hooks = () => {
     const [methods, setMethods] = useStorage<Method[]>("methods", []);
     const [decompile_network] = useStorage<string>("decompile_network");
     const [contract, setContract] = useState<Contract>({
-        address: address(document.location.href),
-        symbol: '',
-        decimals: 18,
+        address: currentAddress,
         block_number: 0,
         chain_id: 0,
-        router: undefined,
-        pair: undefined,
         suggestion_address: []
     });
     const [tenderly_account, setTenderlyAccount] = useStorage<Account>("tenderly");
+
     const [forkLoading, setForksLoading] = useState<boolean>(false);
+
     const [createLoading, setCreateLoading] = useState<boolean>(false);
+
     const [forks, setForks] = useState<Fork[]>([]);
+
     const [current_fork, setCurrentFork] = useState<Fork>();
 
     const fetch = function <T>(req: Request): Promise<T> {
@@ -63,13 +66,11 @@ const useHooks: Hooks = () => {
             forks = forks ?? []
             setForks(forks)
             if (!current_fork) {
-                const regExp = new RegExp(contract.address ?? "0x", "ig");
-                const index = forks.findIndex((f) => {
-                    return regExp.test(f.description ?? "")
-                })
-                if (index >= 0) {
-                    setCurrentFork(forks[index])
+                let fork = forks.find((f => f.description === currentAddress))
+                if (!fork && forks.length > 0) {
+                    fork = forks[0]
                 }
+                setCurrentFork(fork)
             }
             return forks
         }).finally(() => {
@@ -84,9 +85,9 @@ const useHooks: Hooks = () => {
         }).then(res => res.fork)
     }
 
-    const createFork = (req: ForkRequest): Promise<Fork> => {
-        return new Promise<Fork>(async (resolve, reject): Promise<Fork> => {
-            setCreateLoading(true)
+    const createFork = async (req: ForkRequest): Promise<Fork> => {
+        setCreateLoading(true)
+        try {
             const {fork} = await fetch<{ fork: Fork }>({
                 host: `/api/v2/project/{project_slug}/forks`,
                 method: 'POST',
@@ -94,7 +95,8 @@ const useHooks: Hooks = () => {
             })
             setForks([fork, ...forks])
             // 初始化交易测试合约账户
-            fetch<any>({
+            setCurrentFork(fork)
+            await fetch<any>({
                 host: `/api/v1/account/{account_name}/project/{project_slug}/fork/${fork.id}/simulate`,
                 method: 'POST',
                 data: {
@@ -104,20 +106,20 @@ const useHooks: Hooks = () => {
                     input: TestSwapCode,
                     generate_access_list: true,
                     skip_fork_head_update: false,
-                    value: '100000000000000000000000000000000000000000000000',
+                    value: balance.toString(),
                     state_objects: {
                         [zeroAddress]: {
-                            balance: "100000000000000000000000000000000000000000000000000"
+                            balance: (balance * 2n).toString()
                         }
                     },
                 },
-            }).catch(e => {
-                console.log(e)
             })
-            setCurrentFork(fork)
-            setCreateLoading(false)
             return fork
-        })
+        } catch (e) {
+            return e
+        } finally {
+            setCreateLoading(false)
+        }
     }
 
     const removeFork = (fork_id: string): Promise<any> => {
@@ -143,7 +145,49 @@ const useHooks: Hooks = () => {
             throw new Error("请选择测试节点")
         }
         const host = `/api/v1/account/{account_name}/project/{project_slug}/fork/${current_fork.id}/simulate`
-        simulation.root = (await fetchFork(current_fork.id)).head_simulation_id
+        simulation.root = (await fetchFork(current_fork.id)).head_simulation_id;
+
+        ["gas_price", "gas"].forEach((key) => {
+            const type = typeof simulation[key]
+            if ((type !== 'string' && type !== 'number') || simulation[key] == '' || Number(simulation[key]) == 0) {
+                delete simulation[key]
+                return;
+            }
+            const bigint = parseUnits(`${simulation[key]}`, key == 'gas' ? 4 : 9);
+            if (bigint == 0n) {
+                delete simulation[key]
+                return
+            }
+            simulation[key] = key == 'gas' ? Number(bigint.toString()) : bigint.toString()
+        });
+
+        // 说明需要 gas_price
+        if (typeof simulation.gas_price == 'string') {
+            const bal = {
+                balance: balance.toString()
+            }
+            if (!simulation.state_objects) {
+                simulation.state_objects = {
+                    [simulation.from]: bal
+                }
+            } else {
+                simulation.state_objects[simulation.from] = bal
+            }
+        }
+
+        // 设置重写区块信息
+        if (simulation.block_header) {
+            ["number", "timestamp"].forEach((key) => {
+                const type = typeof simulation.block_header[key]
+                if ((type !== 'string' && type !== 'number') || simulation.block_header[key] == '') {
+                    simulation.block_header[key] = null
+                    return;
+                }
+                simulation.block_header[key] = "0x" + parseUnits(`${simulation.block_header[key]}`, 0).toString(16)
+            });
+        }
+
+        // 判断是否主动增发调用者账号资金
         return fetch<any>({
             host: host,
             method: 'POST',
@@ -152,15 +196,62 @@ const useHooks: Hooks = () => {
     }
 
     const getInfo = async () => {
-        const c = await info(explorer.rpc, contract.address ?? zeroAddress)
-        setContract((prevState) => {
-            return {...prevState, ...c}
+        const c = await getContractInfo(explorer.rpc, contract.address ?? zeroAddress)
+
+        let router: Router
+
+        if (typeof c.router == 'string') {
+            router = explorer.router.find((value) => value.address == c.router)
+            if (!router) {
+                router = await getRouterInfo(explorer.rpc, c.router)
+                await setExplorer({
+                    ...explorer,
+                    router: unique<Router>([router, ...explorer.router], 'address'),
+                })
+            }
+        }
+
+        if (!router && explorer.router.length > 0) {
+            router = explorer.router[0]
+        }
+
+        setContract((prev): Contract => {
+            return {
+                ...prev,
+                ...c,
+                router,
+            }
         })
-        if (!c.symbol) {
+
+        if (!c.token) {
             return
         }
+
         const tx = await getCreationTransaction(explorer, contract.address)
-        console.log(tx)
+        let tokens = [...explorer.tokens]
+        let pool
+
+        for (let i = 0; i < tx.pools.length; i++) {
+            pool = tx.pools[i]
+            tokens = tokens.filter(t => t.address !== pool.address)
+        }
+
+        if (pool) {
+            await setExplorer({
+                ...explorer,
+                tokens: [...tx.pools, ...tokens]
+            })
+        } else {
+            pool = explorer.tokens.length > 0 ? explorer.tokens[0] : undefined
+        }
+
+        setContract((prev) => {
+            return {
+                ...prev,
+                ...tx,
+                pool
+            }
+        })
     }
 
     useEffect(() => {
@@ -172,13 +263,12 @@ const useHooks: Hooks = () => {
     }, [tenderly_account])
 
     useEffect(() => {
-        if (!explorer || !explorer.rpc) {
-            return
+        if (explorer.rpc) {
+            getInfo().catch(e => {
+                console.log(e)
+            })
         }
-        getInfo().catch(e => {
-            console.log(e)
-        })
-    }, [explorer])
+    }, [explorer.rpc])
 
     return {
         contract,

@@ -9,7 +9,6 @@ interface LayoutProps {
 }
 
 
-
 export const Layout = (props: LayoutProps) => {
     return <ConfigProvider
         theme={{
