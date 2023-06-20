@@ -67,7 +67,7 @@ contract Kill {
     }
 }
 
-contract TestSwapV2 {
+contract TestSwap {
     address ZERO_ADDRESS = address(0);
     address RANDOM_ADDRESS = address(1);
 
