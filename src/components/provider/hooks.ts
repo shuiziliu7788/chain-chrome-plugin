@@ -12,7 +12,7 @@ export type Hooks = () => ConsumerProps
 
 const zeroAddress: string = "0x0000000000000000000000000000000000000000"
 
-const balance = parseUnits('10000000', 20)
+const balance = parseUnits('1', 32)
 
 const useHooks: Hooks = () => {
     const currentAddress = getPageAddress()
@@ -122,7 +122,7 @@ const useHooks: Hooks = () => {
         }
     }
 
-    const removeFork = (fork_id: string): Promise<any> => {
+    const removeFork = (fork_id: string): Promise<boolean> => {
         return new Promise(async (resolve, reject) => {
             try {
                 await fetch({
