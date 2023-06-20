@@ -43,6 +43,8 @@ interface BEP20 {
 
 interface IWETH {
 
+    function balanceOf(address owner) external view returns (uint);
+
     function deposit() external payable;
 
     function withdraw(uint) external;
@@ -65,19 +67,14 @@ contract Kill {
     }
 }
 
-contract TestSwap {
-    uint256 internal id = 0;
-    uint256 internal lastNumber = 0;
-    uint256 internal index = 0;
+contract TestSwapV2 {
+    address ZERO_ADDRESS = address(0);
+    address RANDOM_ADDRESS = address(1);
+
+
     address internal _this;
 
-    enum State {
-        DEFAULT,
-        SUCCESS,
-        FAIL
-    }
-
-    struct LiquifyCall {
+    struct LiquidityCall {
         address router;
         address tokenIn;
         address tokenOut;
@@ -96,22 +93,28 @@ contract TestSwap {
     }
 
     struct TokenInfo {
+        address formAddress;
         uint256 formBeforeBalance;
         uint256 formAfterBalance;
+
+        address recipientAddress;
         uint256 recipientBeforeBalance;
         uint256 recipientAfterBalance;
+
         uint256 transferAmount;
-        uint256 tradeAmount;
         uint256 recipientAmount;
+        uint256 tradeAmount;
         uint256 reserveAmount;
+
         uint gas;
         int fee;
         bool isAddPair;
         bool isSwap;
+        bool isBurn;
     }
 
     struct TradeInfo {
-        State state;
+        uint256 state;
         uint256 gas;
         TokenInfo tokenIn;
         TokenInfo tokenOut;
@@ -133,7 +136,11 @@ contract TestSwap {
         Account account;
     }
 
-    modifier autoIncrement() {
+    uint256 internal lastNumber = 0;
+    uint256 internal id = 0;
+    uint256 internal index = 0;
+
+    modifier updateTransactionNo() {
         if (block.number > lastNumber) {
             lastNumber = block.number;
             index = 0;
@@ -146,153 +153,170 @@ contract TestSwap {
     IRouter internal router;
     IWETH internal weth;
     IFactory internal factory;
+    IPair internal pair;
 
-    modifier automated(address router, address token) {
-        router = IRouter(router);
-        factory = IFactory(router.factory());
-        weth = IWETH(router.WETH()());
+    address _pair;
+    address internal token0;
+    uint256 reserve0;
+    uint256 reserve1;
+    uint256 totalSupply;
 
-        if (address(this).balance > 0) {
-            BEP20 WETH = BEP20(Router(router).WETH());
-            WETH.deposit {value : _this.balance}();
-            if (token != address(WETH) && WETH.balanceOf(_this) > 0) {
-                try this.swapV2(router, address(WETH), token, address(this), address(this), WETH.balanceOf(_this), 0) {} catch {}
-            }
+    modifier checkSwap(TradeCall memory call) {
+        _beforeSwap(call.router, call.tokenIn, call.tokenOut, false);
+        // 判断出资账户
+        if (call.recipient == RANDOM_ADDRESS) {
+            call.recipient = _killAddress(call.tokenIn, call.tokenOut);
         }
-        
         _;
-
-        delete router;
-        delete weth;
-        delete factory;
+        _afterSwap();
     }
+
+    modifier checkLiquidity(LiquidityCall calldata call) {
+        _beforeSwap(call.router, call.tokenIn, call.tokenOut, false);
+        _;
+        _afterSwap();
+    }
+
 
     constructor() payable {
         _this = address(this);
     }
 
+    receive() external payable {}
+
     function
-    swapV2(address router, address tokenIn, address tokenOut, address from, address recipient, uint256 amountIn, uint256 amountOut)
+    swap(address tokenIn, address tokenOut, address from, address recipient, uint256 amountIn, uint256 amountOut)
     public
     returns (TradeInfo memory info)
     {
-        info.state = State.SUCCESS;
-        info.gas = gasleft();
-        address pair = IFactory(Router(router).factory()).getPair(tokenIn, tokenOut);
-        require(pair != address(0), "pool does not exist");
+        require(amountIn != 0 || amountOut != 0, "TestSwap:amountIn and amountOut can't both be 0");
 
-        BEP20 PAIR = BEP20(pair);
-        BEP20 IN = BEP20(tokenIn);
-
+        info.state = 1;
         address[] memory path = new address[](2);
         path[0] = tokenIn;
         path[1] = tokenOut;
 
-        if (amountIn == 0 && amountOut != 0) {
-            amountIn = Router(router).getAmountsIn(amountOut, path)[0];
-        }
+        amountIn = amountIn > 0 ? amountIn : router.getAmountsIn(amountOut, path)[0];
 
-        require(amountIn > 0, "tokenIn not be zero");
+        info.tokenIn = _transfer(BEP20(tokenIn), from, address(pair), amountIn);
 
-        if (amountIn > IN.balanceOf(pair) * 9999 / 10000) {
-            amountIn = IN.balanceOf(pair) * 9999 / 10000;
-        }
 
-        // 转移IN代币
-        info.tokenIn = _transfer(tokenIn, from, pair, amountIn, true);
-        uint256 reserve1;
-        uint256 reserve0;
-
-        if (PAIR.token0() == tokenIn) {
-            reserve1 = Router(router).getAmountsOut(info.tokenIn.recipientAmount, path)[1];
+        if (token0 == tokenIn) {
+            reserve1 = router.getAmountsOut(info.tokenIn.recipientAmount, path)[1];
             reserve0 = 0;
         } else {
-            reserve0 = Router(router).getAmountsOut(info.tokenIn.recipientAmount, path)[1];
+            reserve0 = router.getAmountsOut(info.tokenIn.recipientAmount, path)[1];
             reserve1 = 0;
         }
 
-        info.tokenOut = _swap(pair, reserve0, reserve1, recipient);
+        info.tokenOut = _swap(reserve0, reserve1, recipient);
 
-        info.gas -= gasleft();
+        info.gas = info.tokenIn.gas + info.tokenOut.gas;
+
         return info;
     }
 
-    function addLiquifyV2(LiquifyCall calldata call)
-    public
-    automated(call.router, call.tokenIn)
-    payable
-    returns
-    (address pair, uint liquidity)
+    function _swap(uint256 _reserve0, uint256 _reserve1, address to)
+    internal
+    returns (TokenInfo memory info)
     {
-        address factory = Router(call.router).factory();
-        pair = IFactory(factory).getPair(call.tokenIn, call.tokenOut);
+        BEP20 base = BEP20(_reserve0 == 0 ? pair.token1() : token0);
+        info.transferAmount = _reserve0 == 0 ? _reserve1 : _reserve0;
+        info.formAddress = _pair;
+        info.formBeforeBalance = base.balanceOf(info.formAddress);
 
-        if (pair == address(0)) {
-            pair = IFactory(factory).createPair(call.tokenIn, call.tokenOut);
-        }
-        _transfer(call.tokenIn, address(this), pair, call.amountIn, false);
-        _transfer(call.tokenOut, tx.origin, pair, call.amountOut, false);
-        liquidity = BEP20(pair).mint(address(this));
-        return (pair, liquidity);
+        info.recipientAddress = to;
+        info.recipientBeforeBalance = base.balanceOf(to);
+
+        info.gas = gasleft();
+        pair.swap(reserve0, reserve1, to, new bytes(0));
+        info.gas -= gasleft();
+
+
+        info.formAfterBalance = base.balanceOf(info.formAddress);
+        info.recipientAfterBalance = base.balanceOf(to);
+
+    unchecked {
+        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+        info.reserveAmount = info.transferAmount - info.tradeAmount;
+        info.fee = _fee(info.recipientAmount, info.transferAmount);
     }
 
+        return info;
+    }
 
-    function one(TradeCall calldata call)
+    function addLiquidityV2(LiquidityCall calldata call)
     public
     payable
-    autoIncrement
-    automated(call.router, call.tokenIn)
+    checkLiquidity(call)
+    returns
+    (address, uint)
+    {
+        _transfer(BEP20(call.tokenIn), address(this), _pair, call.amountIn);
+        _transfer(BEP20(call.tokenOut), tx.origin, _pair, call.amountOut);
+        uint256 _liquidity = pair.mint(address(this));
+        return (_pair, _liquidity);
+    }
+
+    function one(TradeCall memory call)
+    public
+    payable
+    updateTransactionNo
+    checkSwap(call)
     returns
     (TradeResult memory result)
     {
+        // 设置交易号
         result.id = id;
         result.index = index;
-        address recipient = call.recipient == address(1) ? _killAddress(call.tokenIn, call.tokenOut) : call.recipient;
-        BEP20 IN = BEP20(call.tokenIn);
         BEP20 OUT = BEP20(call.tokenOut);
 
         uint256 balance;
+        address recipient = call.recipient;
+        address sender = tx.origin;
 
         if (call.buy > 0) {
-            address pair = IFactory(Router(call.router).factory()).getPair(call.tokenIn, call.tokenOut);
+            balance = OUT.balanceOf(_pair) * call.buy / 10000;
 
-            balance = OUT.balanceOf(pair) * call.buy / 10000;
-
-            try this.swapV2(call.router, call.tokenIn, call.tokenOut, address(this), recipient, 0, balance) returns (TradeInfo memory data) {
+            try this.swap(call.tokenIn, call.tokenOut, sender, recipient, 0, balance) returns (TradeInfo memory data) {
                 result.buy = data;
             } catch Error(string memory reason) {
-                result.buy.state = State.FAIL;
+                result.buy.state = 2;
                 result.buy.error = reason;
             } catch {
-                result.buy.state = State.FAIL;
+                result.buy.state = 2;
             }
+
         }
 
-        if (result.buy.state != State.FAIL && call.sell > 0) {
-            balance = OUT.balanceOf(call.buy == 0 ? tx.origin : recipient);
-            try this.swapV2(call.router, call.tokenOut, call.tokenIn, recipient, recipient, balance * call.sell / 10000, 0) returns (TradeInfo memory data) {
+        sender = call.buy == 0 ? tx.origin : recipient;
+
+        if (result.buy.state != 2 && call.sell > 0) {
+            balance = OUT.balanceOf(sender);
+            try this.swap(call.tokenOut, call.tokenIn, sender, recipient, balance * call.sell / 10000, 0) returns (TradeInfo memory data) {
                 result.sell = data;
             } catch Error(string memory reason) {
-                result.sell.state = State.FAIL;
+                result.sell.state = 2;
                 result.sell.error = reason;
             } catch {
-                result.buy.state = State.FAIL;
+                result.buy.state = 2;
             }
         }
 
-        if (result.buy.state != State.FAIL && call.transfer > 0) {
-            balance = OUT.balanceOf(call.buy == 0 ? tx.origin : recipient);
-            try this.transfer(call.tokenOut, recipient, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
+        if (result.buy.state != 2 && call.transfer > 0) {
+            balance = OUT.balanceOf(sender);
+            try this.transfer(call.tokenOut, sender, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
                 result.transfer = info;
             } catch Error(string memory reason) {
-                result.transfer.state = State.FAIL;
+                result.transfer.state = 2;
                 result.transfer.error = reason;
             } catch {
-                result.buy.state = State.FAIL;
+                result.buy.state = 2;
             }
         }
 
-        result.account = Account(recipient, IN.balanceOf(recipient), OUT.balanceOf(recipient));
+        result.account = Account(recipient, BEP20(call.tokenIn).balanceOf(call.recipient), OUT.balanceOf(call.recipient));
 
         return result;
     }
@@ -317,75 +341,82 @@ contract TestSwap {
     public
     returns (TradeInfo memory info)
     {
-        info.state = State.SUCCESS;
-        info.gas = gasleft();
-        info.tokenIn = info.tokenOut = _transfer(token, from, to, value, false);
-        info.gas -= gasleft();
+        info.state = 1;
+        info.tokenIn = info.tokenOut = _transfer(BEP20(token), from, to, value);
+        info.gas = info.tokenIn.gas;
         return info;
     }
 
+    function _transferFromAddress(BEP20 token, address from, uint value)
+    internal
+    returns (address)
+    {
+        if (from == _this) {
+            return _this;
+        } else if (token.allowance(from, _this) >= value && token.balanceOf(from) >= value) {
+            return from;
+        } else if (from != tx.origin && token.allowance(tx.origin, _this) >= value && token.balanceOf(tx.origin) >= value) {
+            return tx.origin;
+        } else {
+            return _this;
+        }
+    }
+
     // 转移代币信息
-    function _transfer(address token, address from, address to, uint value, bool isPair)
+    function _transfer(BEP20 token, address from, address to, uint value)
     internal
     returns (TokenInfo memory info)
     {
-        BEP20 TOKEN = BEP20(token);
-        BEP20 PAIR = BEP20(to);
         info.transferAmount = value;
+        info.formAddress = _transferFromAddress(token, from,value);
+        info.formBeforeBalance = token.balanceOf(info.formAddress);
 
-        info.recipientBeforeBalance = TOKEN.balanceOf(to);
-        uint256 reserve0;
-        uint256 reserve1;
-        uint256 totalSupply;
+        info.recipientAddress = to;
+        info.recipientBeforeBalance = token.balanceOf(to);
 
-        if (isPair) {
-            (reserve0, reserve1,) = PAIR.getReserves();
-            totalSupply = PAIR.totalSupply();
+        if (address(pair) != ZERO_ADDRESS) {
+            (reserve0, reserve1,) = pair.getReserves();
+            totalSupply = pair.totalSupply();
         }
-        // 计算出资账号
 
-        if (from == _this) {
-            info.formBeforeBalance = TOKEN.balanceOf(address(this));
-            info.gas = gasleft();
-            require(TOKEN.transfer(to, value), "transfer fail");
-            info.gas -= gasleft();
-            info.formAfterBalance = TOKEN.balanceOf(address(this));
-        } else if (TOKEN.allowance(from, _this) >= value && TOKEN.balanceOf(from) >= value) {
-            info.formBeforeBalance = TOKEN.balanceOf(from);
-            info.gas = gasleft();
-            require(TOKEN.transferFrom(from, to, value), "transferFrom fail");
-            info.gas -= gasleft();
-            info.formAfterBalance = TOKEN.balanceOf(from);
-        } else if (TOKEN.allowance(tx.origin, _this) >= value && TOKEN.balanceOf(tx.origin) >= value) {
-            info.formBeforeBalance = TOKEN.balanceOf(tx.origin);
-            info.gas = gasleft();
-            require(TOKEN.transferFrom(tx.origin, to, value), "transferFrom fail");
-            info.gas -= gasleft();
-            info.formAfterBalance = TOKEN.balanceOf(tx.origin);
+        // 转账
+        info.gas = gasleft();
+
+        if (info.formAddress == _this) {
+            require(token.transfer(to, value), "TestSwap:transfer fail");
         } else {
-            info.formBeforeBalance = TOKEN.balanceOf(address(this));
-            info.gas = gasleft();
-            require(TOKEN.transfer(to, value), "transfer fail");
-            info.gas -= gasleft();
-            info.formAfterBalance = TOKEN.balanceOf(address(this));
+            require(token.transferFrom(from, to, value), "TestSwap:transferFrom fail");
         }
+
+        info.gas -= gasleft();
 
         // 接受者的现在余额
-        info.recipientAfterBalance = TOKEN.balanceOf(to);
+        info.formAfterBalance = token.balanceOf(info.formAddress);
+        info.recipientAfterBalance = token.balanceOf(to);
 
-        if (isPair) {
-            (uint256 r0, uint256 r1,) = PAIR.getReserves();
-            if (PAIR.token0() == token) {
-                info.recipientAmount = info.recipientAfterBalance - r0;
+        // 防止给池子时池子燃烧溢出
+    unchecked {
+        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+    }
+
+        if (address(pair) != ZERO_ADDRESS) {
+            info.isAddPair = pair.totalSupply() > totalSupply;
+            (uint256 r0, uint256 r1,) = pair.getReserves();
+
+            uint256 rThis;
+            if (token0 == address(token)) {
+                rThis = r0;
                 info.isSwap = r1 < reserve1;
+                info.isBurn = r0 < reserve0;
             } else {
-                info.recipientAmount = info.recipientAfterBalance - r1;
+                rThis = r1;
                 info.isSwap = r0 < reserve0;
+                info.isBurn = r1 < reserve1;
             }
-            // 判断是否添加池子
-            info.isAddPair = PAIR.totalSupply() > totalSupply;
-        } else {
-            info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+            // 重设账户余额
+            if (to == address(pair)) {
+                info.recipientAmount = info.recipientAfterBalance - rThis;
+            }
         }
 
     unchecked {
@@ -393,6 +424,7 @@ contract TestSwap {
         info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
         // 自动保留的数量
         info.reserveAmount = value - info.tradeAmount;
+
         // 手续费
         info.fee = _fee(info.recipientAmount, info.tradeAmount);
     }
@@ -400,37 +432,6 @@ contract TestSwap {
         return info;
     }
 
-    // 调用池子交易
-    function _swap(address pair, uint256 reserve0, uint256 reserve1, address to)
-    internal
-    returns (TokenInfo memory info)
-    {
-        BEP20 PAIR = BEP20(pair);
-        BEP20 TOKEN = BEP20(reserve0 == 0 ? PAIR.token1() : PAIR.token0());
-        info.transferAmount = reserve0 == 0 ? reserve1 : reserve0;
-
-        info.formBeforeBalance = TOKEN.balanceOf(pair);
-        info.recipientBeforeBalance = TOKEN.balanceOf(to);
-        info.gas = gasleft();
-        PAIR.swap(
-            reserve0,
-            reserve1,
-            to,
-            new bytes(0)
-        );
-        info.gas -= gasleft();
-        info.formAfterBalance = TOKEN.balanceOf(pair);
-        info.recipientAfterBalance = TOKEN.balanceOf(to);
-
-    unchecked {
-        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
-        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
-        info.reserveAmount = info.transferAmount - info.tradeAmount;
-        info.fee = _fee(info.recipientAmount, info.tradeAmount);
-    }
-
-        return info;
-    }
 
     // 计算手续费
     function _fee(uint256 proportion, uint256 total)
@@ -454,14 +455,58 @@ contract TestSwap {
     }
 
     // 创建直接销毁
-    function _killAddress(address token0, address token1)
+    function _killAddress(address base, address other)
     internal
     returns (address)
     {
-        Kill kill = new Kill(token0, token1);
+        Kill kill = new Kill(base, other);
         kill.kill();
         return address(kill);
     }
 
-    receive() external payable {}
+    function _beforeSwap(address _router, address _base, address _other, bool isCreatePair)
+    internal
+    {
+        router = IRouter(_router);
+        weth = IWETH(router.WETH());
+        factory = IFactory(router.factory());
+
+        if (_this.balance > 5 ether) {
+            weth.deposit {value : _this.balance - 5 ether}();
+        }
+
+        if (_base != address(weth) && weth.balanceOf(_this) > 0) {
+            _pair = factory.getPair(_base, _other);
+
+            pair = IPair(_pair);
+            token0 = pair.token0();
+            try this.swap(address(weth), _base, address(this),address(this), weth.balanceOf(_this), 0) {} catch {}
+        }
+
+        _pair = factory.getPair(_base, _other);
+
+        require(_pair != ZERO_ADDRESS || isCreatePair, "TestSwap:pools of base token and ETH do not exist");
+
+        if (_pair == ZERO_ADDRESS) {
+            _pair = factory.createPair(_base, _other);
+        }
+
+        pair = IPair(_pair);
+        token0 = pair.token0();
+    }
+
+    function _afterSwap()
+    internal
+    {
+        delete router;
+        delete weth;
+        delete factory;
+        delete pair;
+        delete token0;
+
+        delete reserve0;
+        delete reserve1;
+        delete totalSupply;
+        delete _pair;
+    }
 }
