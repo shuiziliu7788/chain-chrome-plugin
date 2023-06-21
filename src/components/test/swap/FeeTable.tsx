@@ -120,7 +120,7 @@ const FeeTable = ({dataSource}: FeeTableProps) => {
         theme={{
             token: {
                 fontSize: 13,
-                sizeStep: 4,
+                sizeStep: 3,
             },
         }}
     >

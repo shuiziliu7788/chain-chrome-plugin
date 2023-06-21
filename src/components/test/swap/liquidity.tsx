@@ -39,7 +39,7 @@ const Liquidity = () => {
             // 第一步授权tokenOut
             await submitSimulation({
                 from: values.account,
-                gas_limit: values.gas,
+                gas: values.gas,
                 to: values.tokenOut.address,
                 gas_price: values.gasPrice,
                 input: concat([
@@ -51,12 +51,12 @@ const Liquidity = () => {
             })
 
             // 第二部 添加池子
-            const addLiquifyV2 = await submitSimulation({
+            const addLiquidityV2 = await submitSimulation({
                 from: values.account,
-                gas_limit: values.gas,
+                gas: values.gas,
                 to: TestAddress,
                 gas_price: values.gasPrice,
-                input: TestSwapIface.encodeFunctionData("addLiquifyV2", [{
+                input: TestSwapIface.encodeFunctionData("addLiquidityV2", [{
                     router: values.router.address,
                     tokenIn: values.tokenIn.address,
                     tokenOut: values.tokenOut.address,
@@ -66,13 +66,15 @@ const Liquidity = () => {
                 save: true,
             })
 
-            if (addLiquifyV2.transaction.error_message) {
-                message.error(addLiquifyV2.transaction.error_message)
+            if (addLiquidityV2.transaction.error_message) {
+                message.error(addLiquidityV2.transaction.error_message)
                 return
             }
 
-            const result = TestSwapIface.decodeFunctionResult("addLiquifyV2", addLiquifyV2.transaction.transaction_info.call_trace.output);
-            const outputs = TestSwapIface.getFunction('addLiquifyV2').outputs;
+            const result = TestSwapIface.decodeFunctionResult("addLiquidityV2", addLiquidityV2.transaction.transaction_info.call_trace.output);
+
+            const outputs = TestSwapIface.getFunction('addLiquidityV2').outputs;
+
             setOutputs((): ParamType[] => {
                 return outputs.map((output): ParamType => {
                     return {

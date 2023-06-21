@@ -1,7 +1,7 @@
 import {TestSwapIface} from "@/constant";
 import {Response} from "@/types/tenderly/response";
-import type {CallForm, Event, TradeColumn, TradeResult} from "./typing";
-import {checkAddress, Token} from "@/components";
+import type {CallForm, Event, TradeColumn, TradeInfo, TradeResult} from "./typing";
+import {checkAddress} from "@/components";
 import {getUint} from "ethers";
 
 export const TestAddress: string = '0xBd770416a3345F91E4B34576cb804a576fa48EB1'
@@ -23,6 +23,16 @@ export const encode = (values: any): string => {
     return TestSwapIface.encodeFunctionData("one", [input])
 }
 
+const toObject = <T>(v: any): T => {
+    if (typeof v == 'object') {
+        v = !v.toObject ? v : v.toObject()
+        Object.keys(v).forEach((key) => {
+            v[key] = toObject(v[key])
+        })
+    }
+    return v
+}
+
 export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
 
     if (resp.transaction.error_message) {
@@ -33,42 +43,76 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
                     fork_id: resp.simulation.fork_id,
                     id: resp.simulation.id,
                 },
-                error: `${resp.transaction.error_info.error_message} form ${resp.transaction.error_info.address}`,
+                error: `${resp.transaction.error_info.error_message}`,
             }
         ]
     }
+
+    const sender = checkAddress(form.account);
+
+    const names = {
+        [sender]: 'SenderAccount',
+        [TestAddress]: 'TestSwapContract',
+        [form.tokenIn.address]: `TOKEN:${form.tokenIn.symbol}`,
+        [form.tokenOut.address]: `TOKEN:${form.tokenOut.symbol}`,
+    }
+
+    const tokens = {
+        [form.tokenIn.address]: form.tokenIn,
+        [form.tokenOut.address]: form.tokenOut,
+    }
+
+    let results: TradeResult[] = [];
+
+    if (form.count > 1) {
+        results.push(...TestSwapIface.decodeFunctionResult("many", resp.transaction.transaction_info.call_trace.output)['results'])
+    } else {
+        results.push(TestSwapIface.decodeFunctionResult("one", resp.transaction.transaction_info.call_trace.output)['result'])
+    }
+
+    // 转化结构体
+    results = results.map((value) => {
+        names[value.pair] = `LP:${form.tokenIn.symbol}-${form.tokenOut.symbol}`
+        tokens[value.pair] = {
+            address: value.pair,
+            decimals: 18,
+            symbol: names[value.pair],
+        }
+        if (!names[value.account.account] && value.account.account != TestAddress) {
+            names[value.account.account] = `TestAccount:${value.id}-${value.index}`
+        }
+        // 判断是否需要转账
+        return toObject(value)
+    })
 
     const buy: Event[] = []
     const sell: Event[] = []
     const transfer: Event[] = []
 
-    const names = {
-        [TestAddress]: 'TestSwapContract',
-        [form.tokenIn.address]: form.tokenIn.symbol,
-        [form.tokenOut.address]: form.tokenOut.symbol,
-    }
-
+    // 获取处理日志信息
     if (resp.transaction.transaction_info.logs) {
         let index = 0
         resp.transaction.transaction_info.logs.forEach((value) => {
             if (value.raw.topics[0] == '0xd24646079e049d40989a6ef1838fece81cad58640453288addf8b6e5e0b475db') {
                 index += 1
             }
+
             if (value.raw.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') {
-                const tokenAddress = checkAddress(value.raw.address);
-                const token: Token = tokenAddress == form.tokenIn.address ? form.tokenIn : (tokenAddress == form.tokenOut.address ? form.tokenOut : {
-                    address: tokenAddress,
-                    symbol: '未知',
-                    decimals: 18,
-                })
+                const tokenAddress = checkAddress(value.raw.address)
+                const formAddress = checkAddress(value.raw.topics[1])
+                const toAddress = checkAddress(value.raw.topics[2])
+
                 const log: Event = {
                     address: tokenAddress,
-                    symbol: token.symbol,
-                    decimals: token.decimals,
+                    symbol: tokens[tokenAddress] ? tokens[tokenAddress].symbol : "未知",
+                    decimals:tokens[tokenAddress] ? tokens[tokenAddress].decimals : 18,
                     amount: getUint(value.raw.data),
-                    form: checkAddress(value.raw.topics[1]),
-                    to: checkAddress(value.raw.topics[2]),
+                    form: formAddress,
+                    formTag: names[formAddress],
+                    to: toAddress,
+                    toTag: names[toAddress],
                 }
+
                 if (index == 1) {
                     buy.push(log)
                 } else if (index == 2) {
@@ -80,37 +124,34 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
         })
     }
 
-
-    const output = resp.transaction.transaction_info.call_trace.output
-    const results: TradeResult[] = [];
-
-    if (form.count > 1) {
-        results.push(...TestSwapIface.decodeFunctionResult("many", output)['results'])
-    } else {
-        results.push(TestSwapIface.decodeFunctionResult("one", output)['result'])
-    }
-
-    const toObject = <T>(v: any): T => {
-        if (typeof v == 'object') {
-            v = !v.toObject ? v : v.toObject()
-            Object.keys(v).forEach((key) => {
-                v[key] = toObject(v[key])
-            })
+    const tradeInfo = (trade: TradeInfo, events: Event[]): TradeInfo => {
+        return {
+            ...trade,
+            tokenIn: {
+                ...trade.tokenIn,
+                formTag: names[trade.tokenIn.formAddress],
+                recipientTag: names[trade.tokenIn.recipientAddress],
+            },
+            tokenOut: {
+                ...trade.tokenOut,
+                formTag: names[trade.tokenOut.formAddress],
+                recipientTag: names[trade.tokenOut.recipientAddress],
+            },
+            logs: events
         }
-        return v
     }
 
     // 处理数组信息
-    return results.map((result: any): TradeColumn => {
-        result = toObject<TradeColumn>(result)
-        result.buy.logs = buy
-        result.sell.logs = sell
-        result.transfer.logs = transfer
+    return results.map((result): TradeColumn => {
+
         return {
             ...result,
             key: `${resp.transaction.hash}-${result.id}-${result.index}`,
             tokenIn: form.tokenIn,
             tokenOut: form.tokenOut,
+            buy: tradeInfo(result.buy, buy),
+            sell: tradeInfo(result.sell, sell),
+            transfer: tradeInfo(result.transfer, transfer),
             simulation: {
                 fork_id: resp.simulation.fork_id,
                 id: resp.simulation.id,

@@ -22,20 +22,14 @@ export interface TradeCall {
     transfer: BigNumberish
 }
 
-export interface LiquifyCall {
-    router: string
-    tokenIn: string
-    tokenOut: string
-    amountIn: BigNumberish
-    amountOut: BigNumberish
-}
-
 export interface TokenInfo {
     formAddress: string
+    formTag: string
     formBeforeBalance: bigint
     formAfterBalance: bigint
 
     recipientAddress: string
+    recipientTag: string
     recipientBeforeBalance: bigint
     recipientAfterBalance: bigint
 
@@ -70,12 +64,11 @@ export interface Account {
 export interface TradeResult {
     id?: bigint
     index?: bigint
+    pair?: string
     buy?: TradeInfo
     sell?: TradeInfo
     transfer?: TradeInfo
     account?: Account
-    blockNumber?: bigint
-    blockTimestamp?: bigint
 }
 
 export interface TradeColumn extends TradeResult {

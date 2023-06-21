@@ -4,10 +4,6 @@ This is a [Plasmo extension](https://docs.plasmo.com/) project bootstrapped with
 
 First, run the development server:
 
-RRRRRRR
-RdeiOij0NtIhqUX1PO0N24XSMM-fo8bv
-test
-
 ```bash
 pnpm dev
 # or

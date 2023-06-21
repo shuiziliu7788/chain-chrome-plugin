@@ -10,6 +10,7 @@ interface FeePopoverProps {
     record: TradeColumn
 }
 
+
 interface LogProps {
     event: Event
 }
@@ -60,18 +61,23 @@ const Trade = ({trade, tokenIn, tokenOut, title}: TradeProps) => {
 
     const Tags = () => {
         const tags: ReactNode[] = []
+
         if (trade.tokenIn.isSwap || trade.tokenOut.isSwap) {
             tags.push(<span key={'is_swap'}>自动出货</span>)
         }
-        if (trade.tokenIn.isBurn || trade.tokenOut.isBurn) {
-            tags.push(<span key={'is_burn'}>自动燃烧</span>)
-        }
+
         if (trade.tokenIn.isAddPair || trade.tokenOut.isAddPair) {
             tags.push(<span key={'is_add_pair'}>添加池子</span>)
         }
+
         if (trade.tokenIn.reserveAmount > 0n || trade.tokenOut.reserveAmount > 0n) {
             tags.push(<span key={'reserve_amount'}>自动保留</span>)
         }
+
+        if (trade.tokenIn.isBurn || trade.tokenOut.isBurn) {
+            tags.push(<span key={'is_burn'}>自动燃烧</span>)
+        }
+
         if (tags.length > 0) {
             return <Space wrap>
                 {tags}
@@ -109,32 +115,43 @@ const Trade = ({trade, tokenIn, tokenOut, title}: TradeProps) => {
             <div className={'path'}>
                 <div className={'account'}>
                     <div className={'direction'}>发</div>
-                    <div className={'address'}>{trade.tokenIn.formAddress}</div>
+                    <div className={'address'}>
+                        {trade.tokenIn.formTag ? trade.tokenIn.formTag : trade.tokenIn.formAddress}
+                    </div>
                 </div>
                 <div className={'account'}>
                     <div className={'direction'}>收</div>
-                    <div className={'address'}>{trade.tokenIn.recipientAddress}</div>
+                    <div className={'address'}>
+                        {trade.tokenIn.recipientTag ? trade.tokenIn.recipientTag : trade.tokenIn.recipientAddress}
+                    </div>
                 </div>
             </div>
         </div>
-        <div className='token'>
-            <div className={'amount'}>
-                {FormatNumber(trade.tokenOut.tradeAmount, tokenOut.decimals)}
-                <span className={'unit'}>
+
+        {
+            tokenOut && <div className='token'>
+                <div className={'amount'}>
+                    {FormatNumber(trade.tokenOut.tradeAmount, tokenOut.decimals)}
+                    <span className={'unit'}>
                 {tokenOut.symbol}{trade.tokenOut.fee > 0n && `(${(Number(trade.tokenOut.fee) / 100).toFixed(2)}%)`}
                 </span>
-            </div>
-            <div className={'path'}>
-                <div className={'account'}>
-                    <div className={'direction'}>发</div>
-                    <div className={'address'}>{trade.tokenOut.formAddress}</div>
                 </div>
-                <div className={'account'}>
-                    <div className={'direction'}>收</div>
-                    <div className={'address'}>{trade.tokenOut.recipientAddress}</div>
+                <div className={'path'}>
+                    <div className={'account'}>
+                        <div className={'direction'}>发</div>
+                        <div className={'address'}>
+                            {trade.tokenOut.formTag ? trade.tokenOut.formTag : trade.tokenOut.formAddress}
+                        </div>
+                    </div>
+                    <div className={'account'}>
+                        <div className={'direction'}>收</div>
+                        <div className={'address'}>
+                            {trade.tokenOut.recipientTag ? trade.tokenOut.recipientTag : trade.tokenOut.recipientAddress}
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
         <Tags/>
     </div>
 }
@@ -153,11 +170,11 @@ const FeePopover = ({record}: FeePopoverProps) => {
     >
         <Popover
             placement={'leftBottom'}
-            trigger={['click']}
+            title={'交易详情'}
             arrow={{pointAtCenter: true}}
             content={<div style={{width: 300}}>
                 <Tabs
-                    style={{height: 468}}
+                    style={{maxHeight: 600}}
                     items={[
                         {
                             key: 'info',
@@ -189,7 +206,6 @@ const FeePopover = ({record}: FeePopoverProps) => {
                                         title={'转'}
                                         trade={record.transfer}
                                         tokenIn={record.tokenOut}
-                                        tokenOut={record.tokenOut}
                                     />
                                 }
 

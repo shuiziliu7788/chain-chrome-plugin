@@ -67,12 +67,29 @@ contract Kill {
     }
 }
 
-contract TestSwap {
+abstract contract No {
     address ZERO_ADDRESS = address(0);
     address RANDOM_ADDRESS = address(1);
 
+    uint256 internal lastNumber = 0;
+    uint256 internal id = 0;
+    uint256 internal index = 0;
+
 
     address internal _this;
+
+    modifier updateTransactionNo() {
+        if (block.number > lastNumber) {
+            lastNumber = block.number;
+            index = 0;
+            id += 1;
+        }
+        index += 1;
+        _;
+    }
+}
+
+contract TestSwap is No {
 
     struct LiquidityCall {
         address router;
@@ -130,25 +147,13 @@ contract TestSwap {
     struct TradeResult {
         uint id;
         uint index;
+        address pair;
         TradeInfo buy;
         TradeInfo sell;
         TradeInfo transfer;
         Account account;
     }
 
-    uint256 internal lastNumber = 0;
-    uint256 internal id = 0;
-    uint256 internal index = 0;
-
-    modifier updateTransactionNo() {
-        if (block.number > lastNumber) {
-            lastNumber = block.number;
-            index = 0;
-            id += 1;
-        }
-        index += 1;
-        _;
-    }
 
     IRouter internal router;
     IWETH internal weth;
@@ -310,6 +315,7 @@ contract TestSwap {
         }
 
         emit FLAG();
+
         if (result.buy.state != 2 && call.transfer > 0) {
             balance = OUT.balanceOf(sender);
             try this.transfer(call.tokenOut, sender, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
@@ -323,6 +329,8 @@ contract TestSwap {
         }
 
         emit FLAG();
+
+        result.pair = _pair;
         result.account = Account(recipient, BEP20(call.tokenIn).balanceOf(call.recipient), OUT.balanceOf(call.recipient));
 
         return result;
@@ -479,11 +487,12 @@ contract TestSwap {
         }
 
         if (_base != address(weth) && weth.balanceOf(_this) > 0) {
-            _pair = factory.getPair(_base, _other);
-
+            _pair = factory.getPair(_base, address(weth));
             pair = IPair(_pair);
             token0 = pair.token0();
+
             try this.swap(address(weth), _base, address(this), address(this), weth.balanceOf(_this), 0) {} catch {}
+
         }
 
         _pair = factory.getPair(_base, _other);
@@ -511,6 +520,5 @@ contract TestSwap {
         delete reserve0;
         delete reserve1;
         delete totalSupply;
-
     }
 }
