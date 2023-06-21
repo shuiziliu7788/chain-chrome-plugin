@@ -154,29 +154,33 @@ contract TestSwap {
     IWETH internal weth;
     IFactory internal factory;
     IPair internal pair;
+    address internal _pair;
 
-    address _pair;
     address internal token0;
-    uint256 reserve0;
-    uint256 reserve1;
-    uint256 totalSupply;
+    uint256 internal reserve0;
+    uint256 internal reserve1;
+    uint256 internal totalSupply;
 
     modifier checkSwap(TradeCall memory call) {
         _beforeSwap(call.router, call.tokenIn, call.tokenOut, false);
+
         // 判断出资账户
         if (call.recipient == RANDOM_ADDRESS) {
             call.recipient = _killAddress(call.tokenIn, call.tokenOut);
         }
+
         _;
+
         _afterSwap();
     }
 
     modifier checkLiquidity(LiquidityCall calldata call) {
-        _beforeSwap(call.router, call.tokenIn, call.tokenOut, false);
+        _beforeSwap(call.router, call.tokenIn, call.tokenOut, true);
         _;
         _afterSwap();
     }
 
+    event FLAG();
 
     constructor() payable {
         _this = address(this);
@@ -198,7 +202,7 @@ contract TestSwap {
 
         amountIn = amountIn > 0 ? amountIn : router.getAmountsIn(amountOut, path)[0];
 
-        info.tokenIn = _transfer(BEP20(tokenIn), from, address(pair), amountIn);
+        info.tokenIn = _transfer(BEP20(tokenIn), from, _pair, amountIn);
 
 
         if (token0 == tokenIn) {
@@ -232,16 +236,15 @@ contract TestSwap {
         pair.swap(reserve0, reserve1, to, new bytes(0));
         info.gas -= gasleft();
 
-
         info.formAfterBalance = base.balanceOf(info.formAddress);
         info.recipientAfterBalance = base.balanceOf(to);
 
-    unchecked {
-        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
-        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
-        info.reserveAmount = info.transferAmount - info.tradeAmount;
-        info.fee = _fee(info.recipientAmount, info.transferAmount);
-    }
+        unchecked {
+            info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+            info.reserveAmount = info.transferAmount - info.tradeAmount;
+            info.fee = _fee(info.recipientAmount, info.transferAmount);
+        }
 
         return info;
     }
@@ -270,12 +273,13 @@ contract TestSwap {
         // 设置交易号
         result.id = id;
         result.index = index;
-        BEP20 OUT = BEP20(call.tokenOut);
 
+        BEP20 OUT = BEP20(call.tokenOut);
         uint256 balance;
         address recipient = call.recipient;
-        address sender = tx.origin;
+        address sender = _this;
 
+        emit FLAG();
         if (call.buy > 0) {
             balance = OUT.balanceOf(_pair) * call.buy / 10000;
 
@@ -292,6 +296,7 @@ contract TestSwap {
 
         sender = call.buy == 0 ? tx.origin : recipient;
 
+        emit FLAG();
         if (result.buy.state != 2 && call.sell > 0) {
             balance = OUT.balanceOf(sender);
             try this.swap(call.tokenOut, call.tokenIn, sender, recipient, balance * call.sell / 10000, 0) returns (TradeInfo memory data) {
@@ -304,6 +309,7 @@ contract TestSwap {
             }
         }
 
+        emit FLAG();
         if (result.buy.state != 2 && call.transfer > 0) {
             balance = OUT.balanceOf(sender);
             try this.transfer(call.tokenOut, sender, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
@@ -316,6 +322,7 @@ contract TestSwap {
             }
         }
 
+        emit FLAG();
         result.account = Account(recipient, BEP20(call.tokenIn).balanceOf(call.recipient), OUT.balanceOf(call.recipient));
 
         return result;
@@ -368,13 +375,13 @@ contract TestSwap {
     returns (TokenInfo memory info)
     {
         info.transferAmount = value;
-        info.formAddress = _transferFromAddress(token, from,value);
+        info.formAddress = _transferFromAddress(token, from, value);
         info.formBeforeBalance = token.balanceOf(info.formAddress);
 
         info.recipientAddress = to;
         info.recipientBeforeBalance = token.balanceOf(to);
 
-        if (address(pair) != ZERO_ADDRESS) {
+        if (_pair != ZERO_ADDRESS) {
             (reserve0, reserve1,) = pair.getReserves();
             totalSupply = pair.totalSupply();
         }
@@ -395,14 +402,13 @@ contract TestSwap {
         info.recipientAfterBalance = token.balanceOf(to);
 
         // 防止给池子时池子燃烧溢出
-    unchecked {
-        info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
-    }
+        unchecked {
+            info.recipientAmount = info.recipientAfterBalance - info.recipientBeforeBalance;
+        }
 
-        if (address(pair) != ZERO_ADDRESS) {
+        if (_pair != ZERO_ADDRESS) {
             info.isAddPair = pair.totalSupply() > totalSupply;
             (uint256 r0, uint256 r1,) = pair.getReserves();
-
             uint256 rThis;
             if (token0 == address(token)) {
                 rThis = r0;
@@ -419,19 +425,16 @@ contract TestSwap {
             }
         }
 
-    unchecked {
+        unchecked {
         // 实际支付的数量
-        info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
+            info.tradeAmount = info.formBeforeBalance - info.formAfterBalance;
         // 自动保留的数量
-        info.reserveAmount = value - info.tradeAmount;
-
+            info.reserveAmount = value - info.tradeAmount;
         // 手续费
-        info.fee = _fee(info.recipientAmount, info.tradeAmount);
-    }
-
+            info.fee = _fee(info.recipientAmount, info.tradeAmount);
+        }
         return info;
     }
-
 
     // 计算手续费
     function _fee(uint256 proportion, uint256 total)
@@ -472,7 +475,7 @@ contract TestSwap {
         factory = IFactory(router.factory());
 
         if (_this.balance > 5 ether) {
-            weth.deposit {value : _this.balance - 5 ether}();
+            weth.deposit{value: _this.balance - 5 ether}();
         }
 
         if (_base != address(weth) && weth.balanceOf(_this) > 0) {
@@ -480,7 +483,7 @@ contract TestSwap {
 
             pair = IPair(_pair);
             token0 = pair.token0();
-            try this.swap(address(weth), _base, address(this),address(this), weth.balanceOf(_this), 0) {} catch {}
+            try this.swap(address(weth), _base, address(this), address(this), weth.balanceOf(_this), 0) {} catch {}
         }
 
         _pair = factory.getPair(_base, _other);
@@ -502,11 +505,12 @@ contract TestSwap {
         delete weth;
         delete factory;
         delete pair;
+        delete _pair;
         delete token0;
 
         delete reserve0;
         delete reserve1;
         delete totalSupply;
-        delete _pair;
+
     }
 }

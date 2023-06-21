@@ -1,5 +1,5 @@
 import {ConfigProvider, Divider, Popover, Space, Tabs} from "antd";
-import React, {ReactNode, useContext, useState} from "react";
+import React, {ReactNode, useContext} from "react";
 import type {Event, TradeColumn, TradeInfo} from "./typing";
 import {EyeOutlined} from "@ant-design/icons";
 import type {Token} from "@/components";
@@ -188,10 +188,11 @@ const FeePopover = ({record}: FeePopoverProps) => {
                                     record.transfer.state == 1n && <Trade
                                         title={'转'}
                                         trade={record.transfer}
-                                        tokenIn={record.tokenIn}
-                                        tokenOut={record.tokenIn}
+                                        tokenIn={record.tokenOut}
+                                        tokenOut={record.tokenOut}
                                     />
                                 }
+
                                 <div className={'trade'}>
                                     <div className={'title'}>
                                         账户余额

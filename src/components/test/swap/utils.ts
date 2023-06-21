@@ -37,25 +37,30 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
             }
         ]
     }
+
     const buy: Event[] = []
     const sell: Event[] = []
     const transfer: Event[] = []
-    let index = 0
+
+    const names = {
+        [TestAddress]: 'TestSwapContract',
+        [form.tokenIn.address]: form.tokenIn.symbol,
+        [form.tokenOut.address]: form.tokenOut.symbol,
+    }
 
     if (resp.transaction.transaction_info.logs) {
+        let index = 0
         resp.transaction.transaction_info.logs.forEach((value) => {
             if (value.raw.topics[0] == '0xd24646079e049d40989a6ef1838fece81cad58640453288addf8b6e5e0b475db') {
                 index += 1
             }
             if (value.raw.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') {
                 const tokenAddress = checkAddress(value.raw.address);
-
                 const token: Token = tokenAddress == form.tokenIn.address ? form.tokenIn : (tokenAddress == form.tokenOut.address ? form.tokenOut : {
                     address: tokenAddress,
                     symbol: '未知',
                     decimals: 18,
                 })
-
                 const log: Event = {
                     address: tokenAddress,
                     symbol: token.symbol,
