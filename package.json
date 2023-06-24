@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build --zip",
+    "build-zip": "plasmo build --target=firefox-mv2 --zip",
     "package": "plasmo package"
   },
   "dependencies": {
