@@ -109,7 +109,7 @@ const Liquidity = () => {
         }
         if (contract.creator != contract.owner) {
             accounts.push({
-                label: "管路员",
+                label: "管理员",
                 value: contract.owner,
             })
         }

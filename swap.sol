@@ -75,7 +75,6 @@ abstract contract No {
     uint256 internal id = 0;
     uint256 internal index = 0;
 
-
     address internal _this;
 
     modifier updateTransactionNo() {
@@ -156,6 +155,7 @@ contract TestSwap is No {
 
 
     IRouter internal router;
+    address internal _weth;
     IWETH internal weth;
     IFactory internal factory;
     IPair internal pair;
@@ -168,21 +168,18 @@ contract TestSwap is No {
 
     modifier checkSwap(TradeCall memory call) {
         _beforeSwap(call.router, call.tokenIn, call.tokenOut, false);
-
         // 判断出资账户
         if (call.recipient == RANDOM_ADDRESS) {
             call.recipient = _killAddress(call.tokenIn, call.tokenOut);
         }
-
         _;
-
-        _afterSwap();
+        _afterSwap(call.tokenIn);
     }
 
     modifier checkLiquidity(LiquidityCall calldata call) {
         _beforeSwap(call.router, call.tokenIn, call.tokenOut, true);
         _;
-        _afterSwap();
+        _afterSwap(call.tokenIn);
     }
 
     event FLAG();
@@ -208,7 +205,6 @@ contract TestSwap is No {
         amountIn = amountIn > 0 ? amountIn : router.getAmountsIn(amountOut, path)[0];
 
         info.tokenIn = _transfer(BEP20(tokenIn), from, _pair, amountIn);
-
 
         if (token0 == tokenIn) {
             reserve1 = router.getAmountsOut(info.tokenIn.recipientAmount, path)[1];
@@ -364,6 +360,7 @@ contract TestSwap is No {
 
     function _transferFromAddress(BEP20 token, address from, uint value)
     internal
+    view
     returns (address)
     {
         if (from == _this) {
@@ -479,20 +476,19 @@ contract TestSwap is No {
     internal
     {
         router = IRouter(_router);
-        weth = IWETH(router.WETH());
+        _weth = router.WETH();
+        weth = IWETH(_weth);
         factory = IFactory(router.factory());
 
         if (_this.balance > 5 ether) {
             weth.deposit{value: _this.balance - 5 ether}();
         }
 
-        if (_base != address(weth) && weth.balanceOf(_this) > 0) {
-            _pair = factory.getPair(_base, address(weth));
+        if (_base != _weth && weth.balanceOf(_this) > 0) {
+            _pair = factory.getPair(_base, _weth);
             pair = IPair(_pair);
             token0 = pair.token0();
-
-            try this.swap(address(weth), _base, address(this), address(this), weth.balanceOf(_this), 0) {} catch {}
-
+            try this.swap(_weth, _base, address(this), address(this), weth.balanceOf(_this), 0) {} catch {}
         }
 
         _pair = factory.getPair(_base, _other);
@@ -507,10 +503,18 @@ contract TestSwap is No {
         token0 = pair.token0();
     }
 
-    function _afterSwap()
+    function _afterSwap(address _base)
     internal
     {
+        if (_base != _weth && BEP20(_base).balanceOf(_this) > 0) {
+            _pair = factory.getPair(_base, _weth);
+            pair = IPair(_pair);
+            token0 = pair.token0();
+            try this.swap(_base, _weth, address(this), address(this), BEP20(_base).balanceOf(_this), 0) {} catch {}
+        }
+
         delete router;
+        delete _weth;
         delete weth;
         delete factory;
         delete pair;

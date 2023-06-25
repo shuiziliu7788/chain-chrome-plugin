@@ -53,8 +53,8 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
     const names = {
         [sender]: 'SenderAccount',
         [TestAddress]: 'TestSwapContract',
-        [form.tokenIn.address]: `TOKEN:${form.tokenIn.symbol}`,
-        [form.tokenOut.address]: `TOKEN:${form.tokenOut.symbol}`,
+        [form.tokenIn.address]: `${form.tokenIn.symbol}Token`,
+        [form.tokenOut.address]: `${form.tokenOut.symbol}Token`,
     }
 
     const tokens = {
@@ -105,7 +105,7 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
                 const log: Event = {
                     address: tokenAddress,
                     symbol: tokens[tokenAddress] ? tokens[tokenAddress].symbol : "未知",
-                    decimals:tokens[tokenAddress] ? tokens[tokenAddress].decimals : 18,
+                    decimals: tokens[tokenAddress] ? tokens[tokenAddress].decimals : 18,
                     amount: getUint(value.raw.data),
                     form: formAddress,
                     formTag: names[formAddress],
