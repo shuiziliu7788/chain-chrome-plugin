@@ -1,0 +1,218 @@
+{
+  "arbiscan.io": {
+    "enable": true,
+    "router": [],
+    "tokens": [
+      {
+        "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+        "symbol": "USDT",
+        "decimals": 6,
+        "name": "Tether USD",
+        "totalSupply": "426169382410167"
+      },
+      {
+        "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+        "symbol": "WETH",
+        "decimals": 18,
+        "name": "Wrapped Ether",
+        "totalSupply": "315098875589085279070785"
+      }
+    ],
+    "host": "arbiscan.io",
+    "rpc": "https://rpc.ankr.com/arbitrum",
+    "developer_host": "https://api.arbiscan.io/api"
+  },
+  "bscscan.com": {
+    "enable": true,
+    "router": [
+      {
+        "name": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+        "address": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+        "weth": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "version": 2
+      }
+    ],
+    "tokens": [
+      {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "symbol": "WBNB",
+        "decimals": 18,
+        "name": "Wrapped BNB",
+        "totalSupply": "3174449625966827931564238"
+      },
+      {
+        "address": "0x55d398326f99059fF775485246999027B3197955",
+        "symbol": "USDT",
+        "decimals": 18,
+        "name": "Tether USD",
+        "totalSupply": "3379997906401637314353418691"
+      }
+    ],
+    "host": "bscscan.com",
+    "rpc": "https://rpc.ankr.com/bsc",
+    "developer_host": "https://api.bscscan.com/api",
+    "secret_key": "BMZSWCGU947EMCBTSIIPDIKFGC7Z1QAG7P"
+  },
+  "decompile_network": "http://127.0.0.1:5567",
+  "dict": [
+    {
+      "value": "0x8da5cb5b",
+      "label": "owner",
+      "type": "owner"
+    },
+    {
+      "value": "0x452ed4f1",
+      "label": "lpPair",
+      "type": "pair"
+    },
+    {
+      "value": "0x4188bf5a",
+      "label": "_mainPair",
+      "type": "pair"
+    },
+    {
+      "value": "0x49bd5a5e",
+      "label": "uniswapV2Pair",
+      "type": "pair"
+    },
+    {
+      "value": "0xc816841b",
+      "label": "uniswapPair",
+      "type": "pair"
+    },
+    {
+      "value": "0x632a6a35",
+      "label": "pancakeV2Pair",
+      "type": "pair"
+    },
+    {
+      "value": "0xa8aa1b31",
+      "label": "pair",
+      "type": "pair"
+    },
+    {
+      "value": "0xc31c9c07",
+      "label": "swapRouter",
+      "type": "router"
+    },
+    {
+      "value": "0x1694505e",
+      "label": "uniswapV2Router",
+      "type": "router"
+    },
+    {
+      "value": "0x206c17bb",
+      "label": "_swapRouter",
+      "type": "router"
+    }
+  ],
+  "etherscan.io": {
+    "enable": true,
+    "router": [],
+    "tokens": [
+      {
+        "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "symbol": "USDT",
+        "decimals": 6,
+        "name": "Tether USD",
+        "totalSupply": "36280615894320966"
+      },
+      {
+        "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "symbol": "WETH",
+        "decimals": 18,
+        "name": "Wrapped Ether",
+        "totalSupply": "3408749181362230991928111"
+      }
+    ],
+    "host": "etherscan.io",
+    "rpc": "https://rpc.ankr.com/eth",
+    "developer_host": "https://api.etherscan.io/api"
+  },
+  "fonscan.io": {
+    "enable": true,
+    "router": [],
+    "tokens": [],
+    "host": "fonscan.io",
+    "rpc": "https://fsc-dataseed1.fonscan.io",
+    "developer_host": "https://fonscan.io/api"
+  },
+  "methods": [
+    {
+      "id": "0x8da5cb5b",
+      "label": "owner()",
+      "value": "owner() returns (address owner)"
+    },
+    {
+      "id": "0x313ce567",
+      "label": "decimals()",
+      "value": "decimals() returns (uint8 decimals)"
+    },
+    {
+      "id": "0x70a08231",
+      "label": "balanceOf(address)",
+      "value": "balanceOf(address) returns (uint256 balanceOf)"
+    },
+    {
+      "id": "0x95d89b41",
+      "label": "symbol()",
+      "value": "symbol() returns (string symbol)"
+    },
+    {
+      "id": "0x18160ddd",
+      "label": "totalSupply()",
+      "value": "totalSupply() returns (uint256 totalSupply)"
+    },
+    {
+      "id": "0xa9059cbb",
+      "label": "transfer(address,uint256)",
+      "value": "transfer(address,uint256) returns (bool transfer)"
+    },
+    {
+      "id": "0x095ea7b3",
+      "label": "approve(address,uint256)",
+      "value": "approve(address,uint256) returns (bool approve)"
+    },
+    {
+      "id": "0xdd62ed3e",
+      "label": "allowance(address,address)",
+      "value": "allowance(address,address) returns (uint256 allowance)"
+    },
+    {
+      "id": "0x23b872dd",
+      "label": "transferFrom(address,address,uint256)",
+      "value": "transferFrom(address,address,uint256) returns (bool transferFrom)"
+    },
+    {
+      "id": "0x4d2301cc",
+      "label": "getEthBalance(address)",
+      "value": "getEthBalance(address)"
+    },
+    {
+      "id": "0x17e4d912",
+      "label": "swapV2(address,address,address,address,uint256,uint256)",
+      "value": "swapV2(address,address,address,address,uint256,uint256) returns (tuple(bool,int256,uint256,string) swapV2)"
+    },
+    {
+      "id": "0xbfd3e2b2",
+      "label": "one((address,address,address,uint256,uint256,uint256))",
+      "value": "one((address,address,address,uint256,uint256,uint256))"
+    }
+  ],
+  "scan.coredao.org": {
+    "rpc": "https://rpc.coredao.org/",
+    "router": [],
+    "tokens": []
+  },
+  "scan.pego.network": {
+    "rpc": "https://pegorpc.com/",
+    "enable": true,
+    "router": [],
+    "tokens": []
+  },
+  "tenderly": {
+    "accountName": "RRRRRRR",
+    "accessKey": "RdeiOij0NtIhqUX1PO0N24XSMM-fo8bv",
+    "projectName": "test"
+  }
+}

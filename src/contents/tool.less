@@ -1,0 +1,163 @@
+@import "../components/style/index";
+
+.anticon {
+  display: inline-block;
+  color: inherit;
+  font-style: normal;
+  line-height: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: -0.125em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  &.anticon-spin::before, &.anticon-spin {
+    display: inline-block;
+    -webkit-animation: loadingCircle 1s infinite linear;
+    animation: loadingCircle 1s infinite linear;
+  }
+
+  @-webkit-keyframes loadingCircle {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes loadingCircle {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+
+.w80,
+.addon .ant-input-group-addon,
+.addon > .ant-input-number-group > .ant-input-number-group-addon {
+  width: 80px !important;
+  flex: 0 0 80px;
+  overflow: hidden;
+  color: #ffffffd9 !important;
+}
+
+
+.flex {
+  display: flex;
+  flex-direction: row;
+
+  .auto {
+    flex: auto;
+  }
+
+  .ant-input-compact-first-item {
+    min-width: 80px;
+    max-width: 80px;
+    width: 80px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .ant-select-compact-first-item {
+    min-width: 80px;
+  }
+
+
+  .ant-btn-compact-item {
+    width: 32px;
+  }
+}
+
+
+.trade {
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #8c96a5;
+    margin-bottom: 4px;
+  }
+
+  .title {
+    color: #8c96a5;
+    font-weight: 700 !important;
+  }
+
+  .fees {
+    font-size: 10px;
+  }
+
+  .events {
+    height: 422px;
+    overflow: auto;
+  }
+
+  .token {
+    line-height: 18px;
+    margin: 2px 0;
+
+    .amount {
+      color: #c0d3df;
+    }
+
+    .unit {
+      color: #1677ff;
+      margin-left: 2px;
+    }
+
+    .path {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .account {
+        width: 50%;
+        display: flex;
+        justify-content: start;
+        align-items: center;
+
+        .direction {
+          color: #8c96a5;
+        }
+
+        .address {
+          width: calc(100% - 20px);
+          margin-left: 4px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          color: #1677ff
+        }
+      }
+    }
+  }
+}
+
+.token-label {
+  label {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+
+    &::before {
+      display: none !important;
+    }
+  }
+}
+
+
+* {
+  &::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
