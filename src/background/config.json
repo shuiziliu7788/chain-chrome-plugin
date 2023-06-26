@@ -182,21 +182,6 @@
       "id": "0x23b872dd",
       "label": "transferFrom(address,address,uint256)",
       "value": "transferFrom(address,address,uint256) returns (bool transferFrom)"
-    },
-    {
-      "id": "0x4d2301cc",
-      "label": "getEthBalance(address)",
-      "value": "getEthBalance(address)"
-    },
-    {
-      "id": "0x17e4d912",
-      "label": "swapV2(address,address,address,address,uint256,uint256)",
-      "value": "swapV2(address,address,address,address,uint256,uint256) returns (tuple(bool,int256,uint256,string) swapV2)"
-    },
-    {
-      "id": "0xbfd3e2b2",
-      "label": "one((address,address,address,uint256,uint256,uint256))",
-      "value": "one((address,address,address,uint256,uint256,uint256))"
     }
   ],
   "scan.coredao.org": {

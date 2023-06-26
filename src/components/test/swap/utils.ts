@@ -51,6 +51,8 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
     const sender = checkAddress(form.account);
 
     const names = {
+        "0x0000000000000000000000000000000000000000": "Minted",
+        "0x000000000000000000000000000000000000dEaD": "Burned",
         [sender]: 'SenderAccount',
         [TestAddress]: 'TestSwapContract',
         [form.tokenIn.address]: `${form.tokenIn.symbol}Token`,

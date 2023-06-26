@@ -98,7 +98,7 @@ const Trade = ({trade, tokenIn, tokenOut, title}: TradeProps) => {
                     </>
                 }
                 {
-                    trade.tokenOut.fee > 0n && <>
+                    tokenOut && trade.tokenOut.fee > 0n && <>
                         {tokenOut.symbol}:{(Number(trade.tokenOut.fee) / 100).toFixed(2)}%
                     </>
                 }
@@ -109,7 +109,7 @@ const Trade = ({trade, tokenIn, tokenOut, title}: TradeProps) => {
             <div className={'amount'}>
                 {FormatNumber(trade.tokenIn.tradeAmount, tokenIn.decimals)}
                 <span className={'unit'}>
-                {tokenIn.symbol}{trade.tokenIn.fee > 0n && `(${(Number(trade.tokenIn.fee) / 100).toFixed(2)}%)`}
+                {tokenIn.symbol}
                 </span>
             </div>
             <div className={'path'}>
@@ -133,8 +133,8 @@ const Trade = ({trade, tokenIn, tokenOut, title}: TradeProps) => {
                 <div className={'amount'}>
                     {FormatNumber(trade.tokenOut.tradeAmount, tokenOut.decimals)}
                     <span className={'unit'}>
-                {tokenOut.symbol}{trade.tokenOut.fee > 0n && `(${(Number(trade.tokenOut.fee) / 100).toFixed(2)}%)`}
-                </span>
+                        {tokenOut.symbol}
+                    </span>
                 </div>
                 <div className={'path'}>
                     <div className={'account'}>
@@ -179,53 +179,57 @@ const FeePopover = ({record}: FeePopoverProps) => {
                         {
                             key: 'info',
                             label: '基本信息',
-                            children: <Space
-                                size={[2, 2]}
-                                style={{width: '100%'}}
-                                split={<Divider/>}
-                                direction={'vertical'}
-                            >
-                                {
-                                    record.buy.state == 1n && <Trade
-                                        title={'买'}
-                                        trade={record.buy}
-                                        tokenIn={record.tokenIn}
-                                        tokenOut={record.tokenOut}
-                                    />
-                                }
-                                {
-                                    record.sell.state == 1n && <Trade
-                                        title={'卖'}
-                                        trade={record.sell}
-                                        tokenIn={record.tokenOut}
-                                        tokenOut={record.tokenIn}
-                                    />
-                                }
-                                {
-                                    record.transfer.state == 1n && <Trade
-                                        title={'转'}
-                                        trade={record.transfer}
-                                        tokenIn={record.tokenOut}
-                                    />
-                                }
+                            children: <div className={'trade'}>
+                                <div className={'events'}>
+                                    <Space
+                                        size={[2, 2]}
+                                        style={{width: '100%'}}
+                                        split={<Divider/>}
+                                        direction={'vertical'}
+                                    >
+                                        {
+                                            record.buy.state == 1n && <Trade
+                                                title={'买'}
+                                                trade={record.buy}
+                                                tokenIn={record.tokenIn}
+                                                tokenOut={record.tokenOut}
+                                            />
+                                        }
+                                        {
+                                            record.sell.state == 1n && <Trade
+                                                title={'卖'}
+                                                trade={record.sell}
+                                                tokenIn={record.tokenOut}
+                                                tokenOut={record.tokenIn}
+                                            />
+                                        }
+                                        {
+                                            record.transfer.state == 1n && <Trade
+                                                title={'转'}
+                                                trade={record.transfer}
+                                                tokenIn={record.tokenOut}
+                                            />
+                                        }
 
-                                <div className={'trade'}>
-                                    <div className={'title'}>
-                                        账户余额
-                                    </div>
+                                        <div className={'trade'}>
+                                            <div className={'title'}>
+                                                账户余额
+                                            </div>
 
-                                    <div className={'token'}>
-                                        <div className={'amount'}>
-                                            {FormatNumber(record.account.balanceIn, record.tokenIn.decimals)}
-                                            <span className={'unit'}>{record.tokenIn.symbol}</span>
+                                            <div className={'token'}>
+                                                <div className={'amount'}>
+                                                    {FormatNumber(record.account.balanceIn, record.tokenIn.decimals)}
+                                                    <span className={'unit'}>{record.tokenIn.symbol}</span>
+                                                </div>
+                                                <div className={'amount'}>
+                                                    {FormatNumber(record.account.balanceOut, record.tokenOut.decimals)}
+                                                    <span className={'unit'}>{record.tokenOut.symbol}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className={'amount'}>
-                                            {FormatNumber(record.account.balanceOut, record.tokenOut.decimals)}
-                                            <span className={'unit'}>{record.tokenOut.symbol}</span>
-                                        </div>
-                                    </div>
+                                    </Space>
                                 </div>
-                            </Space>
+                            </div>
                         },
                         {
                             key: 'buy',
@@ -277,3 +281,7 @@ const FeePopover = ({record}: FeePopoverProps) => {
 }
 
 export default FeePopover
+
+/*
+* 150696d1-de0e-4474-9ce6-e8043a012240
+* */

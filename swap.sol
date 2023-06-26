@@ -506,6 +506,7 @@ contract TestSwap is No {
     function _afterSwap(address _base)
     internal
     {
+
         if (_base != _weth && BEP20(_base).balanceOf(_this) > 0) {
             _pair = factory.getPair(_base, _weth);
             pair = IPair(_pair);
