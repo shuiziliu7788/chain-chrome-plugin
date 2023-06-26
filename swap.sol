@@ -353,7 +353,7 @@ contract TestSwap is No {
     returns (TradeInfo memory info)
     {
         info.state = 1;
-        info.tokenIn = info.tokenOut = _transfer(BEP20(token), from, to, value);
+        info.tokenIn = _transfer(BEP20(token), from, to, value);
         info.gas = info.tokenIn.gas;
         return info;
     }

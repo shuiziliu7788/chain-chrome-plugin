@@ -19,7 +19,6 @@ interface ErrorCellProps {
     }
 }
 
-
 export const ErrorCell = ({record}: ErrorCellProps) => {
     return <Tooltip title={record.error}>
         <InfoCircleOutlined
@@ -37,6 +36,7 @@ export const FeeCell = ({trade, type}: FeeCellProps) => {
     } else if (trade.state == 1n) {
         return <>{`${(Number(trade.tokenIn.fee + trade.tokenOut.fee) / 100).toFixed(2)}%`}</>
     }
+
     return <ErrorCell record={{error: trade.error}}/>
 }
 
