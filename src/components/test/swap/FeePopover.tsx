@@ -5,6 +5,7 @@ import {EyeOutlined} from "@ant-design/icons";
 import type {Token} from "@/components";
 import {ConsumerProps, ExplorerContext} from "@/components";
 import {FormatNumber} from "@/utils/number";
+import dayjs from "dayjs";
 
 interface FeePopoverProps {
     record: TradeColumn
@@ -170,7 +171,10 @@ const FeePopover = ({record}: FeePopoverProps) => {
     >
         <Popover
             placement={'leftBottom'}
-            title={'交易详情'}
+            title={<div className={'between'}>
+                <div>交易信息</div>
+                <div style={{color:'#8c96a5',fontSize:10}}>区块: {record.number?.toString()}</div>
+            </div>}
             arrow={{pointAtCenter: true}}
             content={<div style={{width: 300}}>
                 <Tabs
@@ -262,13 +266,15 @@ const FeePopover = ({record}: FeePopoverProps) => {
                 >
                 </Tabs>
                 <Divider/>
-                <div>
+                <div className={'between'}>
                     <a
                         href={`https://dashboard.tenderly.co/${tenderly_account?.accountName}/${tenderly_account?.projectName}/fork/${record.simulation.fork_id}/simulation/${record.simulation.id}`}
-                        target={'_blank'}
-                    >
+                        target={'_blank'}>
                         查看详情
                     </a>
+                    <span style={{color:'#8c96a5',fontSize:10}}>
+                        时间: {dayjs(Number(record.timestamp) * 1000).format("YYYY-MM-DD HH:mm:ss")}
+                    </span>
                 </div>
             </div>}
         >

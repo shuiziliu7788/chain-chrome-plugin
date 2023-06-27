@@ -7,7 +7,6 @@ import dayjs from "dayjs";
 
 const {Paragraph} = Typography
 
-
 interface HashValueProps {
     index: number
     value: ParamType
@@ -65,7 +64,7 @@ export const Value = (props: HashValueProps) => {
             <Input
                 className={'auto'}
                 disabled
-                value={value.value.toString()}
+                value={value.value?.toString()}
             />
             <Paragraph
                 style={{display: 'inline-block', width: "32px", marginBottom: 0}}

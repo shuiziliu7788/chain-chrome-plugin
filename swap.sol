@@ -151,6 +151,8 @@ contract TestSwap is No {
         TradeInfo sell;
         TradeInfo transfer;
         Account account;
+        uint number;
+        uint timestamp;
     }
 
 
@@ -255,12 +257,11 @@ contract TestSwap is No {
     payable
     checkLiquidity(call)
     returns
-    (address, uint)
+    (address lp, uint liquidity)
     {
         _transfer(BEP20(call.tokenIn), address(this), _pair, call.amountIn);
         _transfer(BEP20(call.tokenOut), tx.origin, _pair, call.amountOut);
-        uint256 _liquidity = pair.mint(address(this));
-        return (_pair, _liquidity);
+        return (_pair, pair.mint(address(this)));
     }
 
     function one(TradeCall memory call)
@@ -274,6 +275,9 @@ contract TestSwap is No {
         // 设置交易号
         result.id = id;
         result.index = index;
+        result.number = block.number;
+        result.timestamp = block.timestamp;
+
 
         BEP20 OUT = BEP20(call.tokenOut);
         uint256 balance;

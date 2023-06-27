@@ -99,7 +99,6 @@ const Swap = () => {
                 amountTransfer: 100,
                 count: 1,
                 quantity: 1,
-                gas: 1000,
             }}
             scrollToFirstError={true}
         >

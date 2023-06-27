@@ -13,6 +13,7 @@ const Unit = () => {
     const [bnb, setBnb] = useState<any>("0");
     const [wei, setWei] = useState<any>("0");
 
+
     useEffect(() => {
         try {
             setBnb(FormatNumber(amount, digits))
@@ -31,7 +32,6 @@ const Unit = () => {
             setDigits(contract.token.decimals)
         }
     }, [contract.token])
-
 
     return <>
         <Form.Item>

@@ -69,6 +69,8 @@ export interface TradeResult {
     sell?: TradeInfo
     transfer?: TradeInfo
     account?: Account
+    number: bigint
+    timestamp: bigint
 }
 
 export interface TradeColumn extends TradeResult {

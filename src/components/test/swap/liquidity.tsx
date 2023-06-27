@@ -76,16 +76,17 @@ const Liquidity = () => {
             const outputs = TestSwapIface.getFunction('addLiquidityV2').outputs;
 
             setOutputs((): ParamType[] => {
-                return outputs.map((output): ParamType => {
+                return outputs.map((output, index): ParamType => {
                     return {
                         name: output.name,
                         baseType: output.baseType,
                         type: output.type,
                         fixed: true,
-                        value: result.getValue(output.name),
+                        value: result.getValue(output.name) ?? result[index],
                     }
                 })
             })
+
         } catch (e) {
             setErr(e.toString())
         } finally {
