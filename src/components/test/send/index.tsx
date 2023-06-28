@@ -28,7 +28,6 @@ const Send = () => {
         setLoading(true)
         try {
             const fields = form.getFieldsValue();
-
             const resp = await submitSimulation({
                 from: fields.from,
                 gas: fields.gas,

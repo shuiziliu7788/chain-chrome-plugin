@@ -149,31 +149,22 @@ const useHooks: Hooks = () => {
 
         ["gas_price", "gas"].forEach((key) => {
             const type = typeof simulation[key]
+
             if ((type !== 'string' && type !== 'number') || simulation[key] == '' || Number(simulation[key]) == 0) {
                 delete simulation[key]
                 return;
             }
+
             const bigint = parseUnits(`${simulation[key]}`, key == 'gas' ? 4 : 9);
+
             if (bigint == 0n) {
                 delete simulation[key]
                 return
             }
+
             simulation[key] = key == 'gas' ? Number(bigint.toString()) : bigint.toString()
         });
 
-        // 说明需要 gas_price
-        if (typeof simulation.gas_price == 'string') {
-            const bal = {
-                balance: balance.toString()
-            }
-            if (!simulation.state_objects) {
-                simulation.state_objects = {
-                    [simulation.from]: bal
-                }
-            } else {
-                simulation.state_objects[simulation.from] = bal
-            }
-        }
 
         // 设置重写区块信息
         if (simulation.block_header) {
@@ -185,6 +176,11 @@ const useHooks: Hooks = () => {
                 }
                 simulation.block_header[key] = "0x" + parseUnits(`${simulation.block_header[key]}`, 0).toString(16)
             });
+
+            // 都不存在的时候删除
+            if (!simulation.block_header.timestamp && !simulation.block_header.number) {
+                delete simulation.block_header
+            }
         }
 
         // 判断是否主动增发调用者账号资金

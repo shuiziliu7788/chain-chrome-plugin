@@ -69,8 +69,8 @@ export interface TradeResult {
     sell?: TradeInfo
     transfer?: TradeInfo
     account?: Account
-    number: bigint
-    timestamp: bigint
+    number?: bigint
+    timestamp?: bigint
 }
 
 export interface TradeColumn extends TradeResult {
@@ -99,4 +99,8 @@ export interface CallForm {
     recipient?: string
     quantity?: number
     count?: number
+    block_header?: {
+        number?: string
+        timestamp?: string
+    }
 }

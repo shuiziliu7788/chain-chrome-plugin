@@ -48,6 +48,7 @@ const Liquidity = () => {
                     zeroPadValue(toBeHex(values.amountOut), 32),
                 ]),
                 save: true,
+                block_header:values.block_header,
             })
 
             // 第二部 添加池子
@@ -64,6 +65,7 @@ const Liquidity = () => {
                     amountOut: values.amountOut,
                 }]),
                 save: true,
+                block_header: values.block_header,
             })
 
             if (addLiquidityV2.transaction.error_message) {

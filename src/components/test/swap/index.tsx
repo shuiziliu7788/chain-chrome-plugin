@@ -14,11 +14,12 @@ const Swap = () => {
     const [fee, setFee] = useState<TradeColumn[]>([])
     const [form] = Form.useForm()
     const [loading, setLoading] = useState(false);
+
     const [accounts, setAccounts] = useState<any[]>([
         {
             label: '测试合约',
             value: '0xBd770416a3345F91E4B34576cb804a576fa48EB1',
-        }
+        },
     ]);
 
     const onFinish = async (values: CallForm) => {
@@ -33,8 +34,8 @@ const Swap = () => {
                     to: TestAddress,
                     gas_price: values.gasPrice,
                     input: encode(values),
+                    block_header: values.block_header,
                     save: true,
-                    value: "0",
                 })
 
                 swaps.push(...decode(resp, values))
@@ -49,11 +50,10 @@ const Swap = () => {
                         ...prevState
                     ], 'value')
                 })
-
             } catch (e) {
                 swaps.push({
                     key: `${Math.random()}`,
-                    error: e.toString(),
+                    error: e.toString()
                 })
             }
 
