@@ -1,4 +1,4 @@
-import {App, Button, Card, Form, Input, Space} from "antd";
+import {Button, Card, Form, Input, Space} from "antd";
 import SelectRouter from "@/components/test/swap/SelectRouter";
 import React, {useContext, useEffect, useState} from "react";
 import SelectToken from "@/components/test/swap/SelectToken";
@@ -14,7 +14,6 @@ import {ParamType} from "@/utils/function";
 import {FormatNumber} from "@/utils/number";
 
 const Liquidity = () => {
-    const {message} = App.useApp();
     const [form] = Form.useForm()
     const tokenInSymbol = Form.useWatch(['tokenIn', 'symbol'], form)
     const tokenOutSymbol = Form.useWatch(['tokenOut', 'symbol'], form)
@@ -48,7 +47,7 @@ const Liquidity = () => {
                     zeroPadValue(toBeHex(values.amountOut), 32),
                 ]),
                 save: true,
-                block_header:values.block_header,
+                block_header: values.block_header,
             })
 
             // 第二部 添加池子
@@ -69,7 +68,7 @@ const Liquidity = () => {
             })
 
             if (addLiquidityV2.transaction.error_message) {
-                message.error(addLiquidityV2.transaction.error_message)
+                setErr(addLiquidityV2.transaction.error_message)
                 return
             }
 

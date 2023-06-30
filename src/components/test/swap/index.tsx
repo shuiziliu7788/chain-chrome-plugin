@@ -8,6 +8,7 @@ import SelectRouter from "./SelectRouter";
 import FeeTable from "./FeeTable";
 import {decode, encode, TestAddress} from "./utils";
 import type {CallForm, TradeColumn} from "./typing";
+import {FormatNumber} from "@/utils/number";
 
 const Swap = () => {
     const {contract, submitSimulation,} = useContext<ConsumerProps>(ExplorerContext);
@@ -42,7 +43,7 @@ const Swap = () => {
 
                 setAccounts((prevState: any[]) => {
                     const accounts = swaps.filter(swap => !!swap.account).map(swap => ({
-                        label: `${swap.account.account == TestAddress ? '测试合约' : `${swap.id}账户`}：${swap.account.balanceOut}${values.tokenOut.symbol}`,
+                        label: `${swap.account.account == TestAddress ? '测试合约' : `${swap.id}账户`}：${FormatNumber(swap.account.balanceOut, values.tokenOut.decimals)}${values.tokenOut.symbol}`,
                         value: swap.account.account,
                     }))
                     return unique([
@@ -50,6 +51,7 @@ const Swap = () => {
                         ...prevState
                     ], 'value')
                 })
+                
             } catch (e) {
                 swaps.push({
                     key: `${Math.random()}`,

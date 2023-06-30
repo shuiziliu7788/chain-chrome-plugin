@@ -34,18 +34,18 @@
     ],
     "tokens": [
       {
-        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-        "symbol": "WBNB",
-        "decimals": 18,
-        "name": "Wrapped BNB",
-        "totalSupply": "3174449625966827931564238"
-      },
-      {
         "address": "0x55d398326f99059fF775485246999027B3197955",
         "symbol": "USDT",
         "decimals": 18,
         "name": "Tether USD",
         "totalSupply": "3379997906401637314353418691"
+      },
+      {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "symbol": "WBNB",
+        "decimals": 18,
+        "name": "Wrapped BNB",
+        "totalSupply": "3174449625966827931564238"
       }
     ],
     "host": "bscscan.com",
@@ -190,10 +190,12 @@
     "tokens": []
   },
   "scan.pego.network": {
-    "rpc": "https://pegorpc.com/",
     "enable": true,
     "router": [],
-    "tokens": []
+    "tokens": [],
+    "host": "scan.pego.network",
+    "rpc": "https://pegorpc.com/",
+    "developer_host": "https://scan.pego.network/api"
   },
   "tenderly": {
     "accountName": "RRRRRRR",

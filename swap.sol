@@ -302,8 +302,9 @@ contract TestSwap is No {
         sender = call.buy == 0 ? tx.origin : recipient;
 
         emit FLAG();
-        if (result.buy.state != 2 && call.sell > 0) {
-            balance = OUT.balanceOf(sender);
+        balance = OUT.balanceOf(sender);
+
+        if (result.buy.state != 2 && call.sell > 0 && balance > 0) {
             try this.swap(call.tokenOut, call.tokenIn, sender, recipient, balance * call.sell / 10000, 0) returns (TradeInfo memory data) {
                 result.sell = data;
             } catch Error(string memory reason) {
@@ -315,9 +316,8 @@ contract TestSwap is No {
         }
 
         emit FLAG();
-
-        if (result.buy.state != 2 && call.transfer > 0) {
-            balance = OUT.balanceOf(sender);
+        balance = OUT.balanceOf(sender);
+        if (result.buy.state != 2 && call.transfer > 0 && balance > 0) {
             try this.transfer(call.tokenOut, sender, _randomAddress(), balance * call.transfer / 10000) returns (TradeInfo memory info) {
                 result.transfer = info;
             } catch Error(string memory reason) {

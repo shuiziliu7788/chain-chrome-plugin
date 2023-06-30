@@ -1,6 +1,8 @@
 import request from "@/utils/request";
-import {parseUnits} from "ethers";
+import {parseUnits,getCreate2Address} from "ethers";
 import type {TransactionReceiptParams} from "ethers/src.ts/providers/formatting";
+
+
 
 
 export interface Transaction {
