@@ -1,12 +1,12 @@
 import {AutoComplete, Button, Card, Col, Form, InputNumber, Row, Space} from "antd";
 import React, {useContext, useEffect, useState} from "react";
-import {ConsumerProps, ExplorerContext, unique} from "@/components";
+import {checkAddress, ConsumerProps, ExplorerContext, unique} from "@/components";
 import SelectToken from "./SelectToken";
 import {SwapOutlined} from "@ant-design/icons";
 import SelectAccount from "./SelectAccount";
 import SelectRouter from "./SelectRouter";
 import FeeTable from "./FeeTable";
-import {decode, encode, TestAddress} from "./utils";
+import {approve, decode, encode, TestAddress} from "./utils";
 import type {CallForm, TradeColumn} from "./typing";
 import {FormatNumber} from "@/utils/number";
 
@@ -25,7 +25,15 @@ const Swap = () => {
 
     const onFinish = async (values: CallForm) => {
         setLoading(true)
+        const recipient = checkAddress(values.recipient)
+        // 验证是否需要授权
+        if (!approve[recipient] && (values.amountSell > 0 || values.amountTransfer > 0)) {
+            // 需要授权
+        }
 
+        // 测试合约
+        let Accounts = []
+        let balance = ""
         for (let i = 0; i < values.quantity ?? 1; i++) {
             const swaps: TradeColumn[] = [];
             try {
@@ -38,29 +46,34 @@ const Swap = () => {
                     block_header: values.block_header,
                     save: true,
                 })
-
                 swaps.push(...decode(resp, values))
+                Accounts = [
+                    ...swaps.map(swap => {
+                        if (!swap.account) {
+                            return undefined
+                        }
 
-                setAccounts((prevState: any[]) => {
-                    const accounts = swaps.filter(swap => !!swap.account).map(swap => ({
-                        label: `${swap.account.account == TestAddress ? '测试合约' : `${swap.id}账户`}：${FormatNumber(swap.account.balanceOut, values.tokenOut.decimals)}${values.tokenOut.symbol}`,
-                        value: swap.account.account,
-                    }))
-                    return unique([
-                        ...accounts,
-                        ...prevState
-                    ], 'value')
-                })
-                
+                        const balanceOut = FormatNumber(swap.account.balanceOut, values.tokenOut.decimals)
+
+                        if (swap.account.account == TestAddress) {
+                            balance = balanceOut
+                            return undefined
+                        }
+                        return {
+                            label: `账户${swap.id}-${swap.index}：(${balanceOut} ${values.tokenOut.symbol})`,
+                            value: swap.account.account,
+                        }
+                    })
+                        .filter(account => !!account),
+                    ...Accounts
+                ]
             } catch (e) {
                 swaps.push({
                     key: `${Math.random()}`,
                     error: e.toString()
                 })
             }
-
             console.log(swaps)
-
             setFee((fees) => {
                 return [
                     ...swaps,
@@ -68,7 +81,9 @@ const Swap = () => {
                 ]
             })
         }
-
+        setAccounts((prevState: any[]) => {
+            return unique([Accounts, ...prevState], 'value')
+        })
         setLoading(false)
     }
 
@@ -83,7 +98,7 @@ const Swap = () => {
         form.setFieldsValue({
             router: contract.router,
             account: "0xBd770416a3345F91E4B34576cb804a576fa48EB1",
-            recipient: TestAddress,
+            recipient: "0x0000000000000000000000000000000000000001",
             tokenOut: contract.token,
             tokenIn: contract.pool,
         })

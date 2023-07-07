@@ -57,6 +57,7 @@ interface IFactory {
 }
 
 contract Kill {
+
     constructor(address token0, address token1)  {
         BEP20(token0).approve(msg.sender, type(uint256).max);
         BEP20(token1).approve(msg.sender, type(uint256).max);
@@ -208,6 +209,8 @@ contract TestSwap is No {
 
         info.tokenIn = _transfer(BEP20(tokenIn), from, _pair, amountIn);
 
+        require(info.tokenIn.recipientAmount > 0, "TestSwap:tokenIn fee is 100%");
+
         if (token0 == tokenIn) {
             reserve1 = router.getAmountsOut(info.tokenIn.recipientAmount, path)[1];
             reserve0 = 0;
@@ -277,7 +280,6 @@ contract TestSwap is No {
         result.index = index;
         result.number = block.number;
         result.timestamp = block.timestamp;
-
 
         BEP20 OUT = BEP20(call.tokenOut);
         uint256 balance;
@@ -362,22 +364,6 @@ contract TestSwap is No {
         return info;
     }
 
-    function _transferFromAddress(BEP20 token, address from, uint value)
-    internal
-    view
-    returns (address)
-    {
-        if (from == _this) {
-            return _this;
-        } else if (token.allowance(from, _this) >= value && token.balanceOf(from) >= value) {
-            return from;
-        } else if (from != tx.origin && token.allowance(tx.origin, _this) >= value && token.balanceOf(tx.origin) >= value) {
-            return tx.origin;
-        } else {
-            return _this;
-        }
-    }
-
     // 转移代币信息
     function _transfer(BEP20 token, address from, address to, uint value)
     internal
@@ -445,30 +431,9 @@ contract TestSwap is No {
         return info;
     }
 
-    // 计算手续费
-    function _fee(uint256 proportion, uint256 total)
-    internal
-    pure
-    returns (int256)
-    {
-        if (total == 0) {
-            return 0;
-        }
-        return int(10000) - int(proportion * 10000 / total);
-    }
 
-    // 创建随机地址
-    function _randomAddress()
-    internal
-    view
-    returns (address)
-    {
-        return address(uint160(uint(keccak256(abi.encode(id, index, block.number, block.timestamp)))));
-    }
-
-    // 创建直接销毁
     function _killAddress(address base, address other)
-    internal
+    public
     returns (address)
     {
         Kill kill = new Kill(base, other);
@@ -510,7 +475,6 @@ contract TestSwap is No {
     function _afterSwap(address _base)
     internal
     {
-
         if (_base != _weth && BEP20(_base).balanceOf(_this) > 0) {
             _pair = factory.getPair(_base, _weth);
             pair = IPair(_pair);
@@ -530,4 +494,60 @@ contract TestSwap is No {
         delete reserve1;
         delete totalSupply;
     }
+
+    function _fee(uint256 proportion, uint256 total)
+    internal
+    pure
+    returns (int256)
+    {
+        if (total == 0) {
+            return 0;
+        }
+        return int(10000) - int(proportion * 10000 / total);
+    }
+
+    function _randomAddress()
+    public
+    view
+    returns (address random_address)
+    {
+        return address(uint160(uint(keccak256(abi.encode(id, index, block.number, block.timestamp)))));
+    }
+
+    function _transferFromAddress(BEP20 token, address from, uint value)
+    public
+    view
+    returns (address sender)
+    {
+        if (from == _this) {
+            return _this;
+        } else if (token.allowance(from, _this) >= value && token.balanceOf(from) >= value) {
+            return from;
+        } else if (from != tx.origin && token.allowance(tx.origin, _this) >= value && token.balanceOf(tx.origin) >= value) {
+            return tx.origin;
+        } else {
+            return _this;
+        }
+    }
+
+    function isContract(address account)
+    public
+    view
+    returns (bool is_contract)
+    {
+        uint256 size;
+        assembly {
+            size := extcodesize(account)
+        }
+        return size > 0;
+    }
+
+    function blocks()
+    public
+    view
+    returns (uint256 number, uint256 timestamp)
+    {
+        return (block.number, block.timestamp);
+    }
+
 }

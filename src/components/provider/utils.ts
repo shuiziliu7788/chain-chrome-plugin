@@ -202,17 +202,20 @@ export const getRouterInfo = async (node: string, target: string): Promise<Route
         const data = result.returnData[i]
         if (data.success) {
             const addr = checkAddress(data.returnData)
+            router.weth = addr
             switch (i) {
                 case 0:
-                    router.weth = addr
                     router.version = 2
                     break
                 case 1:
-                    router.weth = addr
                     router.version = 3
                     break
             }
+            break
         }
+    }
+    if (router.weth == ""){
+        throw new Error(`${target}不是路由地址`)
     }
     return router
 }

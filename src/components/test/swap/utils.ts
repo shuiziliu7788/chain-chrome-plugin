@@ -2,9 +2,22 @@ import {TestSwapIface} from "@/constant";
 import {Response} from "@/types/tenderly/response";
 import type {CallForm, Event, TradeColumn, TradeInfo, TradeResult} from "./typing";
 import {checkAddress} from "@/components";
-import {getUint} from "ethers";
+import {getUint,getCreateAddress} from "ethers";
 
 export const TestAddress: string = '0xBd770416a3345F91E4B34576cb804a576fa48EB1'
+
+interface Approve {
+    [key: string]:boolean
+}
+
+export const approve:Approve = {
+    [TestAddress]:true
+}
+
+for (let i = 0; i < 500; i++) {
+    const createAddress = getCreateAddress({from:TestAddress, nonce:i});
+    approve[createAddress] = true
+}
 
 export const encode = (values: any): string => {
     const input = {
@@ -53,10 +66,10 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
     const names = {
         "0x0000000000000000000000000000000000000000": "Minted",
         "0x000000000000000000000000000000000000dEaD": "Burned",
-        [sender]: 'SenderAccount',
+        [sender]: 'Sender',
         [TestAddress]: 'TestSwapContract',
-        [form.tokenIn.address]: `${form.tokenIn.symbol}Token`,
-        [form.tokenOut.address]: `${form.tokenOut.symbol}Token`,
+        [form.tokenIn.address]: `${form.tokenIn.symbol}`,
+        [form.tokenOut.address]: `${form.tokenOut.symbol}`,
     }
 
     const tokens = {
@@ -145,7 +158,6 @@ export const decode = (resp: Response, form: CallForm): TradeColumn[] => {
 
     // 处理数组信息
     return results.map((result): TradeColumn => {
-
         return {
             ...result,
             key: `${resp.transaction.hash}-${result.id}-${result.index}`,
