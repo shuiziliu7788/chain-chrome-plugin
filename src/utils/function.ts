@@ -108,6 +108,8 @@ export const encode = (f: Func): string => {
                 values.push(JSON.parse(value ?? "[]"))
             } else if (f.inputs[i].baseType == 'tuple') {
                 values.push(JSON.parse(value ?? "{}"))
+            } else if (type === 'bool') {
+                values.push(!(value === "0" || Number(value) === 0 || value === 'false'))
             } else if (type !== 'string') {
                 if (typeof value == "string") {
                     value = value.replace(/^\s*|\s*$/g, '')

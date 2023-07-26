@@ -14,7 +14,6 @@ export type Response<T> = {
     error?: string
     data?: T
 }
-
 const handler: PlasmoMessaging.MessageHandler<Request, Response<any>> = async (req, res) => {
     try {
         // 处理URL

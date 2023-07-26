@@ -9,7 +9,6 @@ export const FormatNumber = (amount: Number, digits: Number = 0): string => {
         return "0"
     }
     const de = number.toNumber()
-
     if (de == 0) {
         return "0"
     } else if (de <= 1e-4) {
