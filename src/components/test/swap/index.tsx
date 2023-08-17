@@ -81,8 +81,9 @@ const Swap = () => {
                 ]
             })
         }
+
         setAccounts((prevState: any[]) => {
-            return unique([Accounts, ...prevState], 'value')
+            return unique([...Accounts, ...prevState], 'value')
         })
         setLoading(false)
     }

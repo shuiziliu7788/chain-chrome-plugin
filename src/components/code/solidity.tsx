@@ -21,12 +21,43 @@ export const Solidity = () => {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(false)
 
-    const getSource = async (): Promise<Source> => {
+    const getOpBNBSource = async (): Promise<Source> => {
+        const resp = await request<any>({
+            host: "https://op-bnb-mainnet-explorer-api.nodereal.io/api/contract/preverify",
+            method: 'POST',
+            data: {
+                address: contract.address,
+            },
+            header: {
+                "Content-Type": "application/json",
+            }
+        })
+
         const source: Source = {
             open: false,
             code: '',
             tag: []
         }
+        if (!resp || resp.code != 0) {
+            throw new Error("获取失败")
+        }
+        // data input_json
+        if (!resp.data || !resp.data.input_json) {
+            source.tag.push('未开源')
+            return source
+        }
+        source.open = true;
+        source.code = "";
+        source.abi = resp.data.ouput_json.abi;
+        const keys = Object.keys(resp.data.input_json.sources)
+        for (let i = (keys.length - 1); i >= 0; i--) {
+            source.code += resp.data.input_json.sources[keys[i]]['content'] + "\n\n"
+        }
+        source.code = escape2Html(source.code)
+        return source
+    }
+
+    const getStandardSource = async (): Promise<Source> => {
         const host = explorer.developer_host ?? `https://api.${location.host}/api`
         const resp = await request<any>({
             host,
@@ -38,12 +69,12 @@ export const Solidity = () => {
                 apikey: explorer.secret_key ?? "",
             }
         })
-
-        if (!Array.isArray(resp.result) || resp.result.length == 0) {
-            throw new Error(resp.result ?? "下载失败")
-        }
-
         const result = resp.result[0];
+        const source: Source = {
+            open: false,
+            code: '',
+            tag: []
+        }
 
         if (result.Proxy != "0") {
             source.tag.push('代理合约')
@@ -77,6 +108,13 @@ export const Solidity = () => {
 
         source.code = escape2Html(source.code)
         return source;
+    }
+
+    const getSource = async (): Promise<Source> => {
+        if (location.host == "mainnet.opbnbscan.com") {
+            return getOpBNBSource()
+        }
+        return getStandardSource()
     }
 
     const load = async () => {

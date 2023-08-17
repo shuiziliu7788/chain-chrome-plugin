@@ -8,6 +8,7 @@ import Calculator from "./calculator";
 import {BugOutlined} from "@ant-design/icons";
 import {useTabFlex} from "@/components/style";
 import ABI from "./abi";
+import Decode from "@/components/test/decode";
 
 export const ToolDrawer = () => {
     const hook = useHooks();
@@ -75,6 +76,11 @@ export const ToolDrawer = () => {
                         label: "工具",
                         key: "tool",
                         children: <Calculator/>,
+                    },
+                    {
+                        label: "解码",
+                        key: "decode",
+                        children: <Decode/>,
                     },
                     {
                         label: "签名",

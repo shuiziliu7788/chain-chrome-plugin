@@ -1,4 +1,5 @@
 {
+  "decompile_network": "http://127.0.0.1:5566",
   "arbiscan.io": {
     "enable": true,
     "router": [],
@@ -53,7 +54,58 @@
     "developer_host": "https://api.bscscan.com/api",
     "secret_key": "BMZSWCGU947EMCBTSIIPDIKFGC7Z1QAG7P"
   },
-  "decompile_network": "http://127.0.0.1:5567",
+  "etherscan.io": {
+    "enable": true,
+    "router": [],
+    "tokens": [
+      {
+        "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "symbol": "USDT",
+        "decimals": 6,
+        "name": "Tether USD",
+        "totalSupply": "36280615894320966"
+      },
+      {
+        "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "symbol": "WETH",
+        "decimals": 18,
+        "name": "Wrapped Ether",
+        "totalSupply": "3408749181362230991928111"
+      }
+    ],
+    "host": "etherscan.io",
+    "rpc": "https://rpc.ankr.com/eth",
+    "developer_host": "https://api.etherscan.io/api"
+  },
+  "fonscan.io": {
+    "enable": true,
+    "router": [],
+    "tokens": [],
+    "host": "fonscan.io",
+    "rpc": "https://fsc-dataseed1.fonscan.io",
+    "developer_host": "https://fonscan.io/api"
+  },
+  "scan.coredao.org": {
+    "rpc": "https://rpc.coredao.org/",
+    "router": [],
+    "tokens": []
+  },
+  "scan.pego.network": {
+    "enable": true,
+    "router": [],
+    "tokens": [],
+    "host": "scan.pego.network",
+    "rpc": "https://pegorpc.com/",
+    "developer_host": "https://scan.pego.network/api"
+  },
+  "mainnet.opbnbscan.com": {
+    "enable": true,
+    "router": [],
+    "tokens": [],
+    "host": "mainnet.opbnbscan.com",
+    "rpc": "https://opbnb-mainnet-rpc.bnbchain.org/",
+    "developer_host": "https://opbnb-mainnet-rpc.bnbchain.org/api"
+  },
   "dict": [
     {
       "value": "0x8da5cb5b",
@@ -106,37 +158,6 @@
       "type": "router"
     }
   ],
-  "etherscan.io": {
-    "enable": true,
-    "router": [],
-    "tokens": [
-      {
-        "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-        "symbol": "USDT",
-        "decimals": 6,
-        "name": "Tether USD",
-        "totalSupply": "36280615894320966"
-      },
-      {
-        "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-        "symbol": "WETH",
-        "decimals": 18,
-        "name": "Wrapped Ether",
-        "totalSupply": "3408749181362230991928111"
-      }
-    ],
-    "host": "etherscan.io",
-    "rpc": "https://rpc.ankr.com/eth",
-    "developer_host": "https://api.etherscan.io/api"
-  },
-  "fonscan.io": {
-    "enable": true,
-    "router": [],
-    "tokens": [],
-    "host": "fonscan.io",
-    "rpc": "https://fsc-dataseed1.fonscan.io",
-    "developer_host": "https://fonscan.io/api"
-  },
   "methods": [
     {
       "id": "0x8da5cb5b",
@@ -184,22 +205,9 @@
       "value": "transferFrom(address,address,uint256) returns (bool transferFrom)"
     }
   ],
-  "scan.coredao.org": {
-    "rpc": "https://rpc.coredao.org/",
-    "router": [],
-    "tokens": []
-  },
-  "scan.pego.network": {
-    "enable": true,
-    "router": [],
-    "tokens": [],
-    "host": "scan.pego.network",
-    "rpc": "https://pegorpc.com/",
-    "developer_host": "https://scan.pego.network/api"
-  },
   "tenderly": {
-    "accountName": "RRRRRRR",
-    "accessKey": "RdeiOij0NtIhqUX1PO0N24XSMM-fo8bv",
-    "projectName": "test"
+    "accountName": "",
+    "accessKey": "",
+    "projectName": ""
   }
 }

@@ -1,8 +1,6 @@
 import request from "@/utils/request";
-import {parseUnits,getCreate2Address} from "ethers";
+import {parseUnits} from "ethers";
 import type {TransactionReceiptParams} from "ethers/src.ts/providers/formatting";
-
-
 
 
 export interface Transaction {
@@ -44,6 +42,11 @@ const rpc = async <T>(host: string, method: string, params?: any): Promise<T> =>
 }
 
 export const call = (node: string, transaction: Transaction): Promise<string> => {
+    // 设置from账户
+    if (transaction.from == "") {
+        delete transaction['from']
+    }
+
     ["gasPrice", "value", "gas"].forEach((key) => {
         if (!transaction[key] || transaction[key] === '' || transaction[key] <= 0) {
             delete transaction[key]

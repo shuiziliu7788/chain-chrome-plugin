@@ -1,9 +1,9 @@
-const {getCreateAddress} = require("ethers")
+//
 
+const ss = "0xf340fa0100000000000000000000000070f657164e5b75689b64b7fd1fa275f334f28e18"
 
-for (let i = 0; i < 99; i++) {
-    console.log(getCreateAddress({
-        from: "0xBd770416a3345F91E4B34576cb804a576fa48EB1",
-        nonce: i
-    }))
+function f(code) {
+
 }
+
+console.log()

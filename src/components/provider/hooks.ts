@@ -41,8 +41,8 @@ const useHooks: Hooks = () => {
 
     const [current_fork, setCurrentFork] = useState<Fork>();
 
-    const fetch = function <T>(req: Request): Promise<T> {
-        if (!tenderly_account) {
+    const fetch = async function <T>(req: Request): Promise<T> {
+        if (!tenderly_account || tenderly_account.accountName == "" || tenderly_account.accessKey == "" || tenderly_account.projectName == "") {
             return Promise.reject("请配置Tenderly账号和秘钥")
         }
         req.host = `https://api.tenderly.co${req.host}`.replace("{project_slug}", tenderly_account.projectName).replace("{account_name}", tenderly_account.accountName)
@@ -57,7 +57,7 @@ const useHooks: Hooks = () => {
         })
     }
 
-    const fetchForks = (): Promise<Fork[]> => {
+    const fetchForks = async (): Promise<Fork[]> => {
         setForksLoading(true)
         return fetch<Fork[]>({
             host: `/api/v2/project/{project_slug}/forks`,
@@ -78,48 +78,52 @@ const useHooks: Hooks = () => {
         })
     }
 
-    const fetchFork = (id: string): Promise<Fork> => {
-        return fetch<{ fork: Fork }>({
+    const fetchFork = async (id: string): Promise<Fork> => {
+        const res = await fetch<{ fork: Fork; }>({
             host: `/api/v2/project/{project_slug}/forks/${id}`,
             method: 'GET',
-        }).then(res => res.fork)
+        });
+        return res.fork;
     }
 
-    const createFork = async (req: ForkRequest): Promise<Fork> => {
-        setCreateLoading(true)
-        try {
-            const {fork} = await fetch<{ fork: Fork }>({
-                host: `/api/v2/project/{project_slug}/forks`,
-                method: 'POST',
-                data: req,
-            })
-            setForks([fork, ...forks])
-            // 初始化交易测试合约账户
-            setCurrentFork(fork)
-            await fetch<any>({
-                host: `/api/v1/account/{account_name}/project/{project_slug}/fork/${fork.id}/simulate`,
-                method: 'POST',
-                data: {
-                    root: fork.head_simulation_id,
-                    from: zeroAddress,
-                    save: true,
-                    input: TestSwapCode,
-                    generate_access_list: true,
-                    skip_fork_head_update: false,
-                    value: balance.toString(),
-                    state_objects: {
-                        [zeroAddress]: {
-                            balance: (balance * 2n).toString()
-                        }
+    const createFork = (req: ForkRequest): Promise<Fork> => {
+        return new Promise(async (resolve, reject) => {
+            setCreateLoading(true)
+            try {
+                const {fork} = await fetch<{ fork: Fork }>({
+                    host: `/api/v2/project/{project_slug}/forks`,
+                    method: 'POST',
+                    data: req,
+                })
+                setForks([fork, ...forks])
+                // 初始化交易测试合约账户
+                setCurrentFork(fork)
+                // 自动部署合约
+                await fetch<any>({
+                    host: `/api/v1/account/{account_name}/project/{project_slug}/fork/${fork.id}/simulate`,
+                    method: 'POST',
+                    data: {
+                        root: fork.head_simulation_id,
+                        from: zeroAddress,
+                        save: true,
+                        input: TestSwapCode,
+                        generate_access_list: true,
+                        skip_fork_head_update: false,
+                        value: balance.toString(),
+                        state_objects: {
+                            [zeroAddress]: {
+                                balance: (balance * 2n).toString()
+                            }
+                        },
                     },
-                },
-            })
-            return fork
-        } catch (e) {
-            return e
-        } finally {
-            setCreateLoading(false)
-        }
+                })
+                resolve(fork)
+            } catch (e) {
+                reject(e)
+            } finally {
+                setCreateLoading(false)
+            }
+        })
     }
 
     const removeFork = (fork_id: string): Promise<boolean> => {
@@ -252,9 +256,7 @@ const useHooks: Hooks = () => {
 
     useEffect(() => {
         if (tenderly_account) {
-            fetchForks().catch(e => {
-                console.log("初始化tenderly失败", e)
-            })
+            fetchForks()
         }
     }, [tenderly_account])
 

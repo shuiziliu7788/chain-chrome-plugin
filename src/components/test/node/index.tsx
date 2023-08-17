@@ -82,8 +82,10 @@ const Node = () => {
                         description: contract.address ?? `0x`,
                         name: `${contract.token ? contract.token.symbol : 'TEST'}-${dayjs().format("MM月DD HH:mm")}-链:${contract.chain_id}`,
                         network_id: contract.chain_id
-                    }).catch(e => {
-                        return message.error(e)
+                    }).then(res => {
+                        console.log("创建成功")
+                    }).catch((e) => {
+                        message.error((e?.message) ?? "创建 tenderly fork节点失败")
                     })
                 }}
                 icon={<PlusCircleOutlined/>}
